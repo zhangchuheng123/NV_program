@@ -4,6 +4,7 @@
 %   github:   zhangchuheng123
 % Date:     
 %   Establish:          Oct. 24, 2016
+%   Modify:             Nov. 13, 2016       Add decay
 
 % Description:
 %   This is for Calibration of NV center 
@@ -13,15 +14,20 @@ function calibration
     global isInitialize
 
 	stepsize = 0.5;
+    half_decay_iter_number = 10;
 	cali_mode = '6 points';
 
     % check for initialzation
     if ( (~exist('isInitialize','var')) || (isempty(isInitialize)) || (isInitialize ~= 1) )
         initialization_for_scan;
     end
+    
+    iter_number = 0;
 
     while 1
+%         current_stepsize = stepsize .* exp(-(iter_number / half_decay_iter_number)) .* rand();
         current_stepsize = stepsize .* rand();
+        iter_number = iter_number + 1;
         data = zeros(3,3,3);
         % original point
         data(2,2,2) = read_detector();

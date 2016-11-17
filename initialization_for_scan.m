@@ -2,9 +2,6 @@ function initialization_for_scan
 
     % This is the initialization of Piezo and Detector
 
-    % which stage it is. 'lab5-lian' or 'lab1-hou'
-    stage = 'lab5-lian'; 
-
     global Piezo Detector isInitialize;
 
     fprintf('Initialing...');
@@ -12,21 +9,14 @@ function initialization_for_scan
     % delete all the serial port from memory in case some port is occupied by other applications
     delete(instrfindall);
 
-    % Piezo is connected by ip and port
-    if (stage == 'lab5-lian')
-    	Piezo =  tcpip('192.168.54.3', 50000);
-    elseif  (stage == 'lab1-hou')
-    	Piezo =  tcpip('192.168.13.2', 50000);
-    end
+    % Piezo is connected by ip addressing 
+    % ip = 192.168.54.3 / 192.168.13.2
+    % port = 50000
+    Piezo =  tcpip('192.168.54.3', 50000);
 
     % Detector is connected by serial port 
     % you can find the port number in device management on your computer 
-    Detector = serial('com8');
-    if (stage == 'lab5-lian')
-    	Detector = serial('com3');
-    elseif  (stage == 'lab1-hou')
-    	Detector = serial('com8');
-    end
+    Detector = serial('com3');
     Detector.Terminator = 'CR';
     Detector.BaudRate = 2000000;
     % Detector.InputBufferSize = 32768;

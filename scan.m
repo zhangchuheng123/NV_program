@@ -12,12 +12,13 @@
 %   Modify:             Oct. 29, 2016       add cleanup script
 %   Modify:             Nov. 09, 2016       introduce long scan pause time
 %   Modify:             Nov. 10, 2016       save to different folder 
+%   Establish v2.0      Nov. 17, 2016       use it as a function
 
 % Description:
 %   This is a all-in-one package for scanning fluorescent shining in diamond.
 %   Initialization of hardware devices - piezo and detector - is included.
 
-function scan
+function scan(X, Y, Z, CountNum, Z0, identifier)
 
     global Piezo Detector isInitialize;
 
@@ -32,34 +33,12 @@ function scan
     %% >>>>>>>>>>>>>>>>>>>>>>>>> Parameter Area >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     % These are the parameters to modify, OTHER CODES ARE NOT SUGGESTED TO MODIFY.
 
-    % scope of the scan, it can be 1-D, 2-D or 3-D
-    % scanz example
-%     X = 50;
-%     Y = 50;
-%     Z = 1:0.5:40;
-%     CountNum = 20;
-
-    % sample scan example
-    Z0 = 11;
-    X = 40:0.5:80;
-    Y = 40:0.5:80;
-    Z = [5, 7, 9, 30];
-    Z = Z + Z0;
-    CountNum = 1;
-
-%     X = 42-4:0.2:42+4;
-%     Y = 64-4:0.2:64+4;
-%     Z = 42;
-
     % how to calculate pause time : piezo velocity 1000um/s, fixed time for movement: 50~100ms
     scan_pause_time = 0.06;
     scan_pause_time_long = 0.2;
 
     % automatically save data and figure : Yes -> 1 | No -> 0
     isSave = 1;
-    % use identifier as the begining of saved figure name
-    identifier = 'Scan_sample5_side1';
-
     % >>>>>>>>>>>>>>>>>>>>>>> End of Parameter Area >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
     %% Program begins
@@ -88,6 +67,11 @@ function scan
     fprintf(Piezo, '%s\n', s);
     % pause 1 secs for stablization
     pause(1);
+    
+    if (total_count == 1)
+        sprintf('Move piezo to position ... done');
+        return 0;
+    end
 
     for ind3 = 1:numel(Z)
         for ind2 = 1:numel(Y)
@@ -135,7 +119,6 @@ function scan
             end
         end
     end
-    close(hwait);
     
     %% Draw the figure 
 
