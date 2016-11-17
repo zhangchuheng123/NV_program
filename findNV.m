@@ -36,10 +36,25 @@ Z = [8];
 Z = Z + Z0;
 CountNum = 1;
 
-%% Scan for small marker
-X = 30:0.5:60;
-Y = 30:0.5:60;
-Z = [6, 8];
+%% Coarse scan for small marker
+X = 20:0.5:90;
+Y = 20:0.5:90;
+Z = [0];
 Z = Z + Z0; 
 CountNum = 1;
 scan(X, Y, Z, CountNum, Z0, identifier);
+
+%% Scan for small marker
+X0 = 50;
+Y0 = 50;
+Delta = 3;
+
+X = X0-Delta:0.1:X0+Delta;
+Y = Y0-Delta:0.1:Y0+Delta;
+Z = [0];
+Z = Z + Z0; 
+CountNum = 1;
+scan(X, Y, Z, CountNum, Z0, identifier);
+scan(X+30, Y, Z, CountNum, Z0, identifier);
+scan(X, Y+30, Z, CountNum, Z0, identifier);
+scan(X+30, Y+30, Z, CountNum, Z0, identifier);
