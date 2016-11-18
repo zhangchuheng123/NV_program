@@ -58,21 +58,21 @@ function scan(X, Y, Z, CountNum, Z0, identifier)
     data = zeros(numel(X), numel(Y), numel(Z));
     total_count = numel(X) .* numel(Y) .* numel(Z);
     count = 0;
-
-    hwait=waitbar(0, 'Please wait...', 'Name', 'Scanning...');
-    c = onCleanup(@()close(hwait));
-    tic;
-
-    s = ['MOV 1 ',num2str(X(1)),' 2 ',num2str(Y(1)),' 3 ',num2str(Z(1))];
+    
+        s = ['MOV 1 ',num2str(X(1)),' 2 ',num2str(Y(1)),' 3 ',num2str(Z(1))];
     fprintf(Piezo, '%s\n', s);
     % pause 1 secs for stablization
     pause(1);
     
     if (total_count == 1)
         sprintf('Move piezo to position ... done');
-        return 0;
+        return;
     end
 
+    hwait=waitbar(0, 'Please wait...', 'Name', 'Scanning...');
+    c = onCleanup(@()close(hwait));
+    tic;
+    
     for ind3 = 1:numel(Z)
         for ind2 = 1:numel(Y)
 
