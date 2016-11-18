@@ -27,9 +27,9 @@ CountNum = 1;
 scan(X, Y, Z, CountNum, Z0, identifier);
 
 %% Center scan for NV
-X0 = 86.9;
-Y0 = 65.3;
-Delta = 2;
+X0 = 47.5;
+Y0 = 74.5;
+Delta = 3;
 X = X0-Delta:0.1:X0+Delta;
 Y = Y0-Delta:0.1:Y0+Delta;
 Z = [8];
