@@ -38,23 +38,23 @@ CountNum = 1;
 scan(X, Y, Z, CountNum, Z0, identifier);
 
 %% scanz over NV
-X0 = 86.7;
-Y0 = 65.4;
+X0 = 47.9;
+Y0 = 74.9;
 Z = 20:0.1:40;
 CountNum = 20;
 scan(X0, Y0, Z, CountNum, 0, identifier);
 
 %% Coarse scan for small markers
-X = 50:0.5:90;
-Y = 50:0.5:90;
+X = 25:0.5:65;
+Y = 55:0.5:95;
 Z = [0];
 Z = Z + Z0; 
 CountNum = 1;
 scan(X, Y, Z, CountNum, Z0, identifier);
 
 %% Scan for small marker
-X0 = 58.5;
-Y0 = 59.0;
+X0 = 27.5;
+Y0 = 60.0;
 Delta = 3;
 
 X = X0-Delta:0.1:X0+Delta;
