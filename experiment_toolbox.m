@@ -1,4 +1,3 @@
-% a small change for testing
 function tools = experiment_toolbox
 	tools.NVCoordinate = @NVCoordinate;
 	tools.Initializer = @Initializer;
@@ -68,7 +67,7 @@ function Initializer(device_name)
 	    fprintf(Piezo,'%s\n','VEL 1 1000 2 1000 3 1000');
 	    pause(0.1);
 	    Devices.Piezo = Piezo;
-        fprintf('Piezo: Initialization finished');
+        fprintf('Piezo: Initialization finished\n');
     elseif ( strcmp(device_name, 'Detector') && (~isfield(Devices, 'Detector')) )
 		Detector = serial(parameters.Detector.com_name);
 	    Detector.Terminator = 'CR';
@@ -79,7 +78,7 @@ function Initializer(device_name)
 	    fread(Detector,6);
 	    fprintf(Detector, '%d', [0]);
 	    Devices.Detector = Detector;
-        fprintf('Detector: Initialization finished');
+        fprintf('Detector: Initialization finished\n');
 	end
 end
 
@@ -167,14 +166,17 @@ function scan(X, Y, Z, CountNum, Z0)
     Piezo_MOV(X(1), Y(1), Z(1));
     
     XYZ = {X, Y, Z};
-    fig_hdl = auto_plot(XYZ, data);
+    fig_hdl = auto_plot(XYZ, data, Z0);
 
     if (isSave == 1)
         auto_save(fig_hdl, XYZ, identifier);
     end
 end 
 
-function fig_hdl = auto_plot(XYZ, data)
+function fig_hdl = auto_plot(XYZ, data, Z0)
+    if (nargin == 2)
+        Z0 = 0;
+    end
     dim = [numel(X), numel(Y), numel(Z)];
     total_dim = numel(find(dim ~= 1));
     dim_caption = ['x', 'y', 'z'];
