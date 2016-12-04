@@ -1,17 +1,10 @@
 %% move it to a position
-<<<<<<< HEAD:NVLocation.m
 global parameters;
 parameters = default_parameter_constructor('lab5-lian');
 parameters.figure.identifier =  'Scan_natural-3_';
 tools = experiment_toolbox;
 
 tools.scan(10, 10, 20, 1, 0);
-=======
-close all;
-identifier = 'Scan_natural-3_';
-scan(10, 10, 20, 1, 0, identifier);
->>>>>>> origin/master:findNV.m
-
 %% scanz example
 X = 10;
 Y = 10;
@@ -57,17 +50,6 @@ Z = Z0-5:0.1:Z0+10;
 CountNum = 40;
 tools.scan(NV_x, NV_y, Z, CountNum, 0;
 
-<<<<<<< HEAD:NVLocation.m
-%% Coarse scan for small markers
-X = 25:0.5:65;
-Y = 25:0.5:65;
-Z = [0];
-Z = Z + Z0; 
-CountNum = 1;
-tools.scan(X, Y, Z, CountNum, Z0);
-
-=======
->>>>>>> origin/master:findNV.m
 %% Scan for small marker
 first_x = cross_x + 18.5;
 first_y = cross_y + 23.5;
