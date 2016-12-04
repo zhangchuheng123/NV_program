@@ -165,15 +165,15 @@ function scan(X, Y, Z, CountNum, Z0)
 
     Piezo_MOV(X(1), Y(1), Z(1));
     
-    XYZ = {X, Y, Z};
-    fig_hdl = auto_plot(XYZ, data, Z0);
+    fig_hdl = auto_plot(X, Y, Z, data, Z0);
 
     if (isSave == 1)
-        auto_save(fig_hdl, XYZ, identifier);
+        auto_save(fig_hdl, X, Y, Z, data, identifier);
     end
 end 
 
-function fig_hdl = auto_plot(XYZ, data, Z0)
+function fig_hdl = auto_plot(X, Y, Z, data, Z0)
+    XYZ = {X, Y, Z};
     if (nargin == 2)
         Z0 = 0;
     end
@@ -237,7 +237,8 @@ function fig_hdl = auto_plot(XYZ, data, Z0)
     end
 end
 
-function auto_save(fig_hdl, XYZ, identifier)
+function auto_save(fig_hdl, X, Y, Z, data, identifier)
+    XYZ = {X, Y, Z};
     %% auto save for data and figure
     str_date = datestr(now,'yyyymmdd');
     
