@@ -267,13 +267,13 @@ function Piezo_MVR(X, Y, Z)
 	global Devices;
 	s = 'MVR ';
 	if (X ~= 0)
-		s = s + ['1 ',str2num(X)];
+		s = [s, '1 ', num2str(X)];
 	end
 	if (Y ~= 0)
-		s = s + ['2 ',str2num(Y)];
+		s = [s, '2 ', num2str(Y)];
 	end
 	if (Z ~= 0)
-		s = s + ['3 ',str2num(Z)];
+		s = [s, '3 ', num2str(Z)];
 	end
 	fprintf(Devices.Piezo,'%s\n', s);
 end

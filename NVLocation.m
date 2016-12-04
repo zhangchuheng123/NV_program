@@ -13,7 +13,7 @@ CountNum = 40;
 tools.scan(X, Y, Z, CountNum, 0);
 
 %% sample big marker
-Z0 = 27;
+Z0 = 26.5;
 X = 1:0.5:20;
 Y = 1:0.5:20;
 Z = 0;
