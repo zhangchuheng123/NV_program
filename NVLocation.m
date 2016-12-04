@@ -1,10 +1,16 @@
 %% move it to a position
+<<<<<<< HEAD:NVLocation.m
 global parameters;
 parameters = default_parameter_constructor('lab5-lian');
 parameters.figure.identifier =  'Scan_natural-3_';
 tools = experiment_toolbox;
 
 tools.scan(10, 10, 20, 1, 0);
+=======
+close all;
+identifier = 'Scan_natural-3_';
+scan(10, 10, 20, 1, 0, identifier);
+>>>>>>> origin/master:findNV.m
 
 %% scanz example
 X = 10;
@@ -14,7 +20,7 @@ CountNum = 40;
 tools.scan(X, Y, Z, CountNum, 0);
 
 %% sample big marker
-Z0 = 24.5;
+Z0 = 27;
 X = 1:0.5:20;
 Y = 1:0.5:20;
 Z = 0;
@@ -23,34 +29,35 @@ CountNum = 1;
 tools.scan(X, Y, Z, CountNum, Z0);
 
 %% sample area
-cross_x = 6.0;
-cross_y = 10.5;
+cross_x = 9;
+cross_y = 9;
 
 X = 20:0.5:90;
-Y = 20:0.5:90;
-Z = [6, 7, 8];
+Y = 10:0.5:70;
+Z = [6, 8];
 Z = Z + Z0; 
 CountNum = 1;
 tools.scan(X, Y, Z, CountNum, Z0);
 
 %% Center scan for NV
-X0 = 54;
-Y0 = 36;
+X0 = 62;
+Y0 = 23.5;
+Z = 8;
 Delta = 3;
 X = X0-Delta:0.1:X0+Delta;
 Y = Y0-Delta:0.1:Y0+Delta;
-Z = 6;
 Z = Z + Z0;
 CountNum = 1;
 tools.scan(X, Y, Z, CountNum, Z0);
 
 %% scanz over NV
-NV_x = 54.0;
-NV_y = 35.7;
-Z = 20:0.1:35;
+NV_x = 62.0;
+NV_y = 23.7;
+Z = Z0-5:0.1:Z0+10;
 CountNum = 40;
 tools.scan(NV_x, NV_y, Z, CountNum, 0;
 
+<<<<<<< HEAD:NVLocation.m
 %% Coarse scan for small markers
 X = 25:0.5:65;
 Y = 25:0.5:65;
@@ -59,6 +66,8 @@ Z = Z + Z0;
 CountNum = 1;
 tools.scan(X, Y, Z, CountNum, Z0);
 
+=======
+>>>>>>> origin/master:findNV.m
 %% Scan for small marker
 first_x = cross_x + 18.5;
 first_y = cross_y + 23.5;
