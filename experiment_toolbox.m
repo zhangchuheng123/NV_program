@@ -162,9 +162,18 @@ function scan(X, Y, Z, CountNum, Z0)
             end
         end
     end
+
+    Piezo_MOV(X(1), Y(1), Z(1));
     
-    %% Draw the figure 
     XYZ = {X, Y, Z};
+    fig_hdl = auto_plot(XYZ, data);
+
+    if (isSave == 1)
+        auto_save(fig_hdl, XYZ, identifier);
+    end
+end 
+
+function fig_hdl = auto_plot(XYZ, data)
     dim = [numel(X), numel(Y), numel(Z)];
     total_dim = numel(find(dim ~= 1));
     dim_caption = ['x', 'y', 'z'];
@@ -191,7 +200,6 @@ function scan(X, Y, Z, CountNum, Z0)
         dim_id1 = find(dim ~= 1);
         % degenerated dimension
         dim_id2 = find(dim == 1);
-
         fig_hdl = figure; 
         imagesc(XYZ{dim_id1(1)}, XYZ{dim_id1(2)}, transpose(squeeze(data)));
         xlabel(dim_caption(dim_id1(1)));
@@ -224,38 +232,34 @@ function scan(X, Y, Z, CountNum, Z0)
         end
         suptitle('Volume scan ( kilo counts/sec )');
     end
+end
 
-    % put the piezo back
-    s = ['MOV 1 ',num2str(X(1)),' 2 ',num2str(Y(1)),' 3 ',num2str(Z(1))];
-    fprintf(Piezo,'%s\n', s);
-
+function auto_save(fig_hdl, XYZ, identifier)
     %% auto save for data and figure
-    if (isSave == 1)
-        str_date = datestr(now,'yyyymmdd');
-        
-        % maximize the window of the figure
-        set(fig_hdl,'outerposition',get(0,'screensize'));
-        fig_hdl.PaperPositionMode = 'auto';
-        
-        figure_dir = ['fig/fig', str_date];
-        data_dir = ['data/data', str_date];
+    str_date = datestr(now,'yyyymmdd');
+    
+    % maximize the window of the figure
+    set(fig_hdl,'outerposition',get(0,'screensize'));
+    fig_hdl.PaperPositionMode = 'auto';
+    
+    figure_dir = ['fig/fig', str_date];
+    data_dir = ['data/data', str_date];
 
-        % establish working dir if not exist
-        if (~exist(figure_dir, 'dir'))
-            mkdir(figure_dir);
-        end
-        if (~exist(data_dir, 'dir'))
-            mkdir(data_dir);
-        end
-
-        str = datestr(now,'yyyymmddHHMMss');
-        print(fig_hdl, fullfile(figure_dir, [identifier, str]), '-djpeg','-r0');
-        saveas(fig_hdl, fullfile(figure_dir, [identifier, str]), 'fig');
-
-        str_mat = [identifier, str, '.mat'];
-        save(fullfile(data_dir, str_mat), 'data', 'XYZ');
+    % establish working dir if not exist
+    if (~exist(figure_dir, 'dir'))
+        mkdir(figure_dir);
     end
-end 
+    if (~exist(data_dir, 'dir'))
+        mkdir(data_dir);
+    end
+
+    str = datestr(now,'yyyymmddHHMMss');
+    print(fig_hdl, fullfile(figure_dir, [identifier, str]), '-djpeg','-r0');
+    saveas(fig_hdl, fullfile(figure_dir, [identifier, str]), 'fig');
+
+    str_mat = [identifier, str, '.mat'];
+    save(fullfile(data_dir, str_mat), 'data', 'XYZ');
+end
 
 function Piezo_MOV(X, Y, Z)
 	global Devices;
