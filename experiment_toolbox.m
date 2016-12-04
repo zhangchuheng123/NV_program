@@ -53,7 +53,7 @@ function Initializer(device_name)
 	if (isempty(Devices))
 		delete(instrfindall);
 	end
-	if ((device_name == 'Piezo') && (~isfield(Devices, 'Piezo')))
+	if ((strcmp(device_name, 'Piezo')) && (~isfield(Devices, 'Piezo')))
 		Piezo = tcpip(parameters.Piezo.ip_name, parameters.Piezo.ip_port);
 		fopen(Piezo);
 	    fprintf(Piezo,'%s\n','ONL 1 1 2 1 3 1');
@@ -67,7 +67,8 @@ function Initializer(device_name)
 	    fprintf(Piezo,'%s\n','VEL 1 1000 2 1000 3 1000');
 	    pause(0.1);
 	    Devices.Piezo = Piezo;
-	elseif （(device_name == 'Detector') && (~isfield(Devices, 'Detector')) )
+        fprintf('Piezo: Initialization finished');
+    elseif ( strcmp(device_name, 'Detector') && (~isfield(Devices, 'Detector')) )
 		Detector = serial(parameters.Detector.com_name);
 	    Detector.Terminator = 'CR';
 	    Detector.BaudRate = 2000000;
@@ -77,6 +78,7 @@ function Initializer(device_name)
 	    fread(Detector,6);
 	    fprintf(Detector, '%d', [0]);
 	    Devices.Detector = Detector;
+        fprintf('Detector: Initialization finished');
 	end
 end
 
@@ -101,10 +103,10 @@ function scan(X, Y, Z, CountNum, Z0)
 	%   This is a all-in-one package for scanning fluorescent shining in diamond.
 	%   Initialization of hardware devices - piezo and detector - is included.
 
-    global Devices;
+    global Devices parameters;
 
     % Check for initialization
-    if ( (isempty(Devices)) || （~isfield(Devices, 'Piezo')) || （~isfield(Devices, 'Detector') )
+	if ( (isempty(Devices)) || (~isfield(Devices, 'Piezo')) || (~isfield(Devices, 'Detector')) )
 		Initializer('Piezo');
 		Initializer('Detector');		
 	end
@@ -115,8 +117,6 @@ function scan(X, Y, Z, CountNum, Z0)
     scan_pause_time_long = parameters.scan.scan_pause_time_long;
     isSave = parameters.figure.is_save;
     identifier = parameters.figure.identifier;
-
-    inert_detector = Detector;
 
     Piezo_MOV(X(1), Y(1), Z(1)), pause(1);
     Detector_read();
@@ -145,10 +145,11 @@ function scan(X, Y, Z, CountNum, Z0)
                 % move piezo to new position
                 if (ind1 ~= 1)
                     step_x = X(2) - X(1);
-                    Piezo_MVR(step_x, 0, 0), pause(scan_pause_time);
+                    Piezo_MVR(step_x, 0, 0),  pause(scan_pause_time);
                 end 
                 % read data
-                data(ind1, ind2, ind3) = Detector_read(CountNum);
+                ancilla = Detector_read(CountNum);
+                data(ind1, ind2, ind3) = ancilla;
 
                 % update processing bar
                 count = count + 1;
@@ -278,10 +279,11 @@ function Piezo_MVR(X, Y, Z)
 end
 
 function count = Detector_read(round_num, time_ms)
+    global Devices;
 	if (nargin == 0)
 		round_num = 1;
 		time_ms = 10;
-	elseif (nargin = 1)
+	elseif (nargin == 1)
 		time_ms = 10;
 	end
 	if (time_ms == 10)
@@ -293,9 +295,9 @@ function count = Detector_read(round_num, time_ms)
 	end
 	count = 0;
 	for num = 1:round_num
-		fprintf(Detector,'%d', [bit_num]);
-	    data_reader = fread(Detector, 6);
-	    fprintf(Detector,'%d', [0]);
+		fprintf(Devices.Detector,'%d', [bit_num]);
+	    data_reader = fread(Devices.Detector, 6);
+	    fprintf(Devices.Detector,'%d', [0]);
 	    count = count + data_reader(4)*65536 + data_reader(5)*256 + data_reader(6);
 	end
     count = count .* ratio ./ round_num;
