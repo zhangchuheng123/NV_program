@@ -1,13 +1,17 @@
 %% move it to a position
-identifier = 'Scan_natural-3_';
-scan(10, 10, 20, 1, 0, identifier);
+global parameters;
+parameters = default_parameter_constructor('lab5-lian');
+parameters.figure.identifier =  'Scan_natural-3_';
+tools = experiment_toolbox;
+
+tools.scan(10, 10, 20, 1, 0);
 
 %% scanz example
 X = 10;
 Y = 10;
 Z = 15:0.5:30;
 CountNum = 40;
-scan(X, Y, Z, CountNum, 0, identifier);
+tools.scan(X, Y, Z, CountNum, 0);
 
 %% sample big marker
 Z0 = 24.5;
@@ -16,7 +20,7 @@ Y = 1:0.5:20;
 Z = 0;
 Z = Z + Z0; 
 CountNum = 1;
-scan(X, Y, Z, CountNum, Z0, identifier);
+tools.scan(X, Y, Z, CountNum, Z0);
 
 %% sample area
 cross_x = 6.0;
@@ -27,7 +31,7 @@ Y = 20:0.5:90;
 Z = [6, 7, 8];
 Z = Z + Z0; 
 CountNum = 1;
-scan(X, Y, Z, CountNum, Z0, identifier);
+tools.scan(X, Y, Z, CountNum, Z0);
 
 %% Center scan for NV
 X0 = 54;
@@ -38,14 +42,14 @@ Y = Y0-Delta:0.1:Y0+Delta;
 Z = 6;
 Z = Z + Z0;
 CountNum = 1;
-scan(X, Y, Z, CountNum, Z0, identifier);
+tools.scan(X, Y, Z, CountNum, Z0);
 
 %% scanz over NV
 NV_x = 54.0;
 NV_y = 35.7;
 Z = 20:0.1:35;
 CountNum = 40;
-scan(NV_x, NV_y, Z, CountNum, 0, identifier);
+tools.scan(NV_x, NV_y, Z, CountNum, 0;
 
 %% Coarse scan for small markers
 X = 25:0.5:65;
@@ -53,7 +57,7 @@ Y = 25:0.5:65;
 Z = [0];
 Z = Z + Z0; 
 CountNum = 1;
-scan(X, Y, Z, CountNum, Z0, identifier);
+tools.scan(X, Y, Z, CountNum, Z0);
 
 %% Scan for small marker
 first_x = cross_x + 18.5;
@@ -79,7 +83,20 @@ Y = Y0-Delta:0.1:Y0+Delta;
 Z = [0];
 Z = Z + Z0; 
 CountNum = 1;
-scan(X, Y, Z, CountNum, Z0, identifier);
-scan(X+30, Y, Z, CountNum, Z0, identifier);
-scan(X, Y+30, Z, CountNum, Z0, identifier);
-scan(X+30, Y+30, Z, CountNum, Z0, identifier);
+tools.scan(X, Y, Z, CountNum, Z0);
+tools.scan(X+30, Y, Z, CountNum, Z0);
+tools.scan(X, Y+30, Z, CountNum, Z0);
+tools.scan(X+30, Y+30, Z, CountNum, Z0);
+
+%% NVCooridinate
+
+% marker coordingate 
+% sequence: (0,0) (0,30) (30,0) (30,30)
+F(:,1)=[58.2 31.5]';
+F(:,2)=[87.9 31.1]';
+F(:,3)=[58.5 61.4]';
+F(:,4)=[88.3 60.9]';
+% NV position
+NVposition=[62.0, 23.7]';
+
+tools.NVCooridinate(F, NVposition);

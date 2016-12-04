@@ -1,15 +1,15 @@
-% author:   Zhang Chuheng 
-%   email:    zhangchuheng123 (AT) gmail.com
-%   home:     zhangchuheng123.github.io
-%   github:   zhangchuheng123
-% Date:     
-%   Establish:          Oct. 24, 2016
-%   Modify:             Nov. 13, 2016       Add decay
-
-% Description:
-%   This is for Calibration of NV center 
-
 function calibration
+
+    % author:   Zhang Chuheng 
+    %   email:    zhangchuheng123 (AT) gmail.com
+    %   home:     zhangchuheng123.github.io
+    %   github:   zhangchuheng123
+    % Date:     
+    %   Establish:          Oct. 24, 2016
+    %   Modify:             Nov. 13, 2016       Add decay
+
+    % Description:
+    %   This is for Calibration of NV center 
 
     global isInitialize
 
