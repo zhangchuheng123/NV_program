@@ -81,7 +81,7 @@ function Initializer(device_name)
 	    Devices.Detector = Detector;
         fprintf('Detector: Initialization finished\n');
 	elseif ( strcmp(device_name, 'MW') && (~isfield(Devices, 'MW')) )
-        MW = visa(parameters.MW.vendor, parameters.MW.resxname);
+        MW = tcpip(parameters.MW.ip_name, parameters.MW.ip_port);
         fopen(MW);
         Devices.MW = MW;
         fprintf('MW: Initialization finished\n');
@@ -332,10 +332,26 @@ function ESR(freq, pow, loop)
     MW_power(pow);
     MW_turnon;
     ESR_data = zeros(1,numel(freq));
+    
+    hwait=waitbar(0, 'Please wait...', 'Name', 'ESR...');
+    c = onCleanup(@()close(hwait));
+    total_count = loop(1) * numel(freq);
+    count = 0;
+    tic;
+    
     for n = 1:loop(1)
-        for k = numel(freq)
+        for k = 1:numel(freq)
             MW_frequency(freq(k)), pause(0.03);
             ESR_data(k) = ESR_data(k) + Detector_read(loop(2), 100);
+            
+            % update processing bar
+            count = count + 1;
+            ratio = count ./ total_count;
+            t = toc;
+            remaining_time = fix(t ./ ratio .* (1 - ratio));
+            str = sprintf('(count at freq = %.3f GHz) = %.1f Now processing %.1f %% \n Time remaining %d s', ...
+                freq(k), ESR_data(k), fix(ratio .* 1000)/10, remaining_time);
+            waitbar(ratio, hwait, str);
         end
     end
     ESR_data = ESR_data ./ loop(1);
@@ -344,11 +360,12 @@ function ESR(freq, pow, loop)
         X = freq;
         auto_save(fig_hdl, X, 1, 1, ESR_data, parameters.figure.identifier);
     end
-    MW_turnnoff;
+    MW_turnoff;
 end
 
 function fig_hdl = ESR_plot(freq, data)
-    fig_hdl = plot(freq, data);
+    fig_hdl = figure;
+    plot(freq, data);
     xlabel('frequency(GHz)');
     ylabel('fluorescent(kilo count/s)');
     title('ESR Scan');
