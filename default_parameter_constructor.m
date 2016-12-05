@@ -1,9 +1,13 @@
 function parameters = default_parameter_constructor(stage_name)
 	parameters.stage = stage_name;
-	if (parameters.stage == 'lab5-lian')
+	if (strcmp(parameters.stage, 'lab5-lian'))
 		parameters.Piezo.ip_name = '192.168.54.3';
 		parameters.Piezo.ip_port = 50000;
 		parameters.Detector.com_name = 'com3';
+		parameters.AWG.ip_name = '192.168.55.4';
+		parameters.AWG.ip_port = 4000;
+		parameters.MW.vendor = 'AGILENT';
+		parameters.MW.resxname = 'USB0::0x0957::0x1F01::MY53050138::0::INSTR';
 	end
 
 	% waiting time between each sample point

@@ -2,6 +2,7 @@ function tools = experiment_toolbox
 	tools.NVCoordinate = @NVCoordinate;
 	tools.Initializer = @Initializer;
 	tools.scan = @scan;
+    tools.ESR = @ESR;
 end
 
 function NVCoordinate(F, NVposition)
@@ -79,7 +80,17 @@ function Initializer(device_name)
 	    fprintf(Detector, '%d', [0]);
 	    Devices.Detector = Detector;
         fprintf('Detector: Initialization finished\n');
-	end
+	elseif ( strcmp(device_name, 'MW') && (~isfield(Devices, 'MW')) )
+        MW = visa(parameters.MW.vendor, parameters.MW.resxname);
+        fopen(MW);
+        Devices.MW = MW;
+        fprintf('MW: Initialization finished\n');
+    elseif ( strcmp(device_name, 'AWG') && (~isfield(Devices, 'AWG')) )
+        AWG = tcpip(parameters.AWG.ip_name, parameters.AWG.ip_port);
+        fopen(AWG);
+        Devices.AWG = AWG;
+        fprintf('AWG: Initialization finished\n');
+    end   
 end
 
 function scan(X, Y, Z, CountNum, Z0)
@@ -309,4 +320,55 @@ function count = Detector_read(round_num, time_ms)
 	    count = count + data_reader(4)*65536 + data_reader(5)*256 + data_reader(6);
 	end
     count = count .* ratio ./ round_num;
+end
+
+function ESR(freq, pow, loop)
+    global parameters;
+    MW_power(pow);
+    MW_turnon;
+    ESR_data = zeros(1,numel(freq));
+    for n = 1:loop(1)
+        for k = numel(freq)
+            MW_frequency(freq(k)), pause(0.03);
+            ESR_data(k) = ESR_data(k) + Detector_read(loop(2), 100);
+        end
+    end
+    ESR_data = ESR_data ./ loop(1);
+    fig_hdl = ESR_plot(freq, ESR_data);
+    if (parameters.figure.is_save == 1)
+        X = freq;
+        auto_save(fig_hdl, X, 1, 1, ESR_data, parameters.figure.identifier);
+    end
+end
+
+function fig_hdl = ESR_plot(freq, data)
+    fig_hdl = plot(freq, data);
+    xlabel('frequency(GHz)');
+    ylabel('fluorescent(kilo count/s)');
+    title('ESR Scan');
+end
+
+function MW_power(pow)
+    global Devices;
+    s = [':POW ', num2str(pow), 'DBM'];
+    fprintf(Devices.MW,'%s\n',s);
+    pause(0.1);
+end
+
+function MW_turnon
+    global Devices;
+    fprintf(Devices.MW,'%s\n',':OUTP ON');
+    pause(0.1);
+end
+
+function MW_trunoff
+    global Devices;
+    fprintf(Devices.MW,'%s\n',':OUTP OFF');
+    pause(0.1);
+end
+
+function MW_frequency(freq)
+    global Devices;
+    s = [':FREQ ', num2str(FreqStart), 'GHz'];
+    fprintf(Devices.MW,'%s\n',s);
 end
