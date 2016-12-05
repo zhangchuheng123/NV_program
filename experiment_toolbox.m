@@ -69,7 +69,7 @@ function Initializer(device_name)
 	    pause(0.1);
 	    Devices.Piezo = Piezo;
         fprintf('Piezo: Initialization finished\n');
-    elseif ( strcmp(device_name, 'Detector') && (~isfield(Devices, 'Detector')) )
+	elseif ( strcmp(device_name, 'Detector') && (~isfield(Devices, 'Detector')) )
 		Detector = serial(parameters.Detector.com_name);
 	    Detector.Terminator = 'CR';
 	    Detector.BaudRate = 2000000;
@@ -85,12 +85,12 @@ function Initializer(device_name)
         fopen(MW);
         Devices.MW = MW;
         fprintf('MW: Initialization finished\n');
-    elseif ( strcmp(device_name, 'AWG') && (~isfield(Devices, 'AWG')) )
+	elseif ( strcmp(device_name, 'AWG') && (~isfield(Devices, 'AWG')) )
         AWG = tcpip(parameters.AWG.ip_name, parameters.AWG.ip_port);
         fopen(AWG);
         Devices.AWG = AWG;
         fprintf('AWG: Initialization finished\n');
-    end   
+	end   
 end
 
 function scan(X, Y, Z, CountNum, Z0)
@@ -121,8 +121,6 @@ function scan(X, Y, Z, CountNum, Z0)
 		Initializer('Piezo');
 		Initializer('Detector');		
 	end
-	Piezo = Devices.Piezo;
-	Detector = Devices.Detector;
 
     scan_pause_time = parameters.scan.scan_pause_time;
     scan_pause_time_long = parameters.scan.scan_pause_time_long;
@@ -133,12 +131,12 @@ function scan(X, Y, Z, CountNum, Z0)
     Detector_read();
 
     data = zeros(numel(X), numel(Y), numel(Z));
-    total_count = numel(X) .* numel(Y) .* numel(Z);
+    total_count = numel(X) * numel(Y) * numel(Z);
     count = 0;
     
     if (total_count == 1)
     	Piezo_MOV(X(1), Y(1), Z(1));
-        sprintf('Move piezo to position ... done');
+        fprintf('Move piezo to position ... done\n');
         return;
     end
 
@@ -150,13 +148,15 @@ function scan(X, Y, Z, CountNum, Z0)
     for ind3 = 1:numel(Z)
         for ind2 = 1:numel(Y)
 
-        	Piezo_MOV(X(1), Y(ind2), Z(ind3)), pause(scan_pause_time_long);
+        	Piezo_MOV(X(1), Y(ind2), Z(ind3));
+            pause(scan_pause_time_long);
 
             for ind1 = 1:numel(X)
                 % move piezo to new position
                 if (ind1 ~= 1)
                     step_x = X(2) - X(1);
-                    Piezo_MVR(step_x, 0, 0),  pause(scan_pause_time);
+                    Piezo_MVR(step_x, 0, 0);
+                    pause(scan_pause_time);
                 end 
                 % read data
                 ancilla = Detector_read(CountNum);
@@ -174,8 +174,6 @@ function scan(X, Y, Z, CountNum, Z0)
         end
     end
 
-    Piezo_MOV(X(1), Y(1), Z(1));
-    
     fig_hdl = scan_plot(X, Y, Z, data, Z0);
 
     if (isSave == 1)
@@ -323,7 +321,14 @@ function count = Detector_read(round_num, time_ms)
 end
 
 function ESR(freq, pow, loop)
-    global parameters;
+    global Devices parameters;
+    if ( (isempty(Devices)) || (~isfield(Devices, 'Piezo')) || (~isfield(Devices, 'Detector')) )
+		Initializer('Piezo');
+		Initializer('Detector');		
+    end
+	if ( (isempty(Devices)) || (~isfield(Devices, 'MW')) )
+		Initializer('MW');	
+	end
     MW_power(pow);
     MW_turnon;
     ESR_data = zeros(1,numel(freq));
@@ -339,6 +344,7 @@ function ESR(freq, pow, loop)
         X = freq;
         auto_save(fig_hdl, X, 1, 1, ESR_data, parameters.figure.identifier);
     end
+    MW_turnnoff;
 end
 
 function fig_hdl = ESR_plot(freq, data)
@@ -361,7 +367,7 @@ function MW_turnon
     pause(0.1);
 end
 
-function MW_trunoff
+function MW_turnoff
     global Devices;
     fprintf(Devices.MW,'%s\n',':OUTP OFF');
     pause(0.1);
@@ -369,6 +375,6 @@ end
 
 function MW_frequency(freq)
     global Devices;
-    s = [':FREQ ', num2str(FreqStart), 'GHz'];
+    s = [':FREQ ', num2str(freq), 'GHz'];
     fprintf(Devices.MW,'%s\n',s);
 end
