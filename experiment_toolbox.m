@@ -176,16 +176,16 @@ function scan(X, Y, Z, CountNum, Z0)
 
     Piezo_MOV(X(1), Y(1), Z(1));
     
-    fig_hdl = auto_plot(X, Y, Z, data, Z0);
+    fig_hdl = scan_plot(X, Y, Z, data, Z0);
 
     if (isSave == 1)
         auto_save(fig_hdl, X, Y, Z, data, identifier);
     end
 end 
 
-function fig_hdl = auto_plot(X, Y, Z, data, Z0)
+function fig_hdl = scan_plot(X, Y, Z, data, Z0)
     XYZ = {X, Y, Z};
-    if (nargin == 2)
+    if (nargin == 4)
         Z0 = 0;
     end
     dim = [numel(X), numel(Y), numel(Z)];
