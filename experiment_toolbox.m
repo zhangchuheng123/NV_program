@@ -326,9 +326,13 @@ function fig_hdl = ESR_plot(freq, data)
     title('ESR Scan');
 end
 
-function calibration(count)
+function calibration(count, position)
     global Devices parameters;
 
+    if (nargin == 2)
+       Piezo_MOV(position(1), position(2), position(3));
+    end
+    
     stepsize = parameters.calibration.step_size;
     half_decay_iter_number = parameters.calibration.half_decay_iter_number;
 
@@ -352,12 +356,14 @@ function calibration(count)
 end
 
 function calibration_once(current_stepsize)
+    global parameters;
+    
     pause_time = parameters.calibration.pause_time;
     data = zeros(3,3,3);
     % original point
     data(2,2,2) = Detector_read(1, 100);
     % display current count
-    disp(sprintf('Calibration center counts = %.2f k', data(2,2,2)));
+    fprintf('Calibration center counts = %.2f k\n', data(2,2,2));
     % get the other six points
     for direction = 1:3
         Piezo_MVR_1D(direction, current_stepsize), pause(pause_time);

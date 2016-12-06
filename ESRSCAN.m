@@ -13,7 +13,7 @@ CountNum = 40;
 tools.scan(X, Y, Z, CountNum, 0);
 
 %% sample big marker
-Z0 = 26.3;
+Z0 = 27;
 X = 1:0.5:20;
 Y = 1:0.5:20;
 Z = 0;
@@ -22,25 +22,25 @@ CountNum = 1;
 tools.scan(X, Y, Z, CountNum, Z0);
 
 %% Center scan for NV
-X0 = 9.5-11.0+23.9;
-Y0 = 9.0-9.5+70.1;
-Z = 5.7;
+X0 = 20.8;
+Y0 = 67.4;
+Z = 32.7;
 Delta = 3;
-X = X0-Delta:0.1:X0+Delta;
-Y = Y0-Delta:0.1:Y0+Delta;
+X = X0-Delta:0.3:X0+Delta;
+Y = Y0-Delta:0.3:Y0+Delta;
 Z = Z + Z0;
 CountNum = 1;
 tools.scan(X, Y, Z, CountNum, Z0);
 
 %% scanz over NV
-NV_x = 34.9;
-NV_y = 32.8;
+NV_x = 21.2;
+NV_y = 67.2;
 Z = Z0-5:0.1:Z0+10;
 CountNum = 40;
 tools.scan(NV_x, NV_y, Z, CountNum, 0);
 
 %% ESR
-NV_z = 36.0;
+NV_z = 33;
 tools.scan(NV_x, NV_y, NV_z, 1, 0);
 
 freq = 2.82:0.001:2.93;
