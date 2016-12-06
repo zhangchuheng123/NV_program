@@ -3,6 +3,7 @@ function tools = experiment_toolbox
 	tools.Initializer = @Initializer;
 	tools.scan = @scan;
     tools.ESR = @ESR;
+    tools.calibration = @calibration;
 end
 
 function NVCoordinate(F, NVposition)
@@ -274,52 +275,6 @@ function auto_save(fig_hdl, X, Y, Z, data, identifier)
     save(fullfile(data_dir, str_mat), 'data', 'XYZ');
 end
 
-function Piezo_MOV(X, Y, Z)
-	global Devices;
-	s = ['MOV 1 ',num2str(X),' 2 ',num2str(Y),' 3 ',num2str(Z)];
-	fprintf(Devices.Piezo,'%s\n', s);
-end
-
-function Piezo_MVR(X, Y, Z)
-	global Devices;
-	s = 'MVR ';
-	if (X ~= 0)
-		s = [s, '1 ', num2str(X)];
-	end
-	if (Y ~= 0)
-		s = [s, '2 ', num2str(Y)];
-	end
-	if (Z ~= 0)
-		s = [s, '3 ', num2str(Z)];
-	end
-	fprintf(Devices.Piezo,'%s\n', s);
-end
-
-function count = Detector_read(round_num, time_ms)
-    global Devices;
-	if (nargin == 0)
-		round_num = 1;
-		time_ms = 10;
-	elseif (nargin == 1)
-		time_ms = 10;
-	end
-	if (time_ms == 10)
-		bit_num = 2;
-		ratio = 0.1;
-	elseif (time_ms == 100)
-		bit_num = 4;
-		ratio = 0.01;
-	end
-	count = 0;
-	for num = 1:round_num
-		fprintf(Devices.Detector,'%d', [bit_num]);
-	    data_reader = fread(Devices.Detector, 6);
-	    fprintf(Devices.Detector,'%d', [0]);
-	    count = count + data_reader(4)*65536 + data_reader(5)*256 + data_reader(6);
-	end
-    count = count .* ratio ./ round_num;
-end
-
 function ESR(freq, pow, loop)
     global Devices parameters;
     if ( (isempty(Devices)) || (~isfield(Devices, 'Piezo')) || (~isfield(Devices, 'Detector')) )
@@ -371,6 +326,57 @@ function fig_hdl = ESR_plot(freq, data)
     title('ESR Scan');
 end
 
+function calibration(count)
+    global Devices parameters;
+
+    stepsize = parameters.calibration.step_size;
+    half_decay_iter_number = parameters.calibration.half_decay_iter_number;
+
+    % Check for initialization
+    if ( (isempty(Devices)) || (~isfield(Devices, 'Piezo')) || (~isfield(Devices, 'Detector')) )
+        Initializer('Piezo');
+        Initializer('Detector');        
+    end
+    
+    iter_number = 0;
+
+    if (count == inf)
+        count = double(intmax('int32'));
+    end
+
+    for i = 1:count
+        current_stepsize = stepsize .* rand() .* exp(-(iter_number / half_decay_iter_number));
+        iter_number = iter_number + 1;
+        calibration_once(current_stepsize);
+    end
+end
+
+function calibration_once(current_stepsize)
+    pause_time = parameters.calibration.pause_time;
+    data = zeros(3,3,3);
+    % original point
+    data(2,2,2) = Detector_read(1, 100);
+    % display current count
+    disp(sprintf('Calibration center counts = %.2f k', data(2,2,2)));
+    % get the other six points
+    for direction = 1:3
+        Piezo_MVR_1D(direction, current_stepsize), pause(pause_time);
+        data(2 + (direction == 1),2 + (direction == 2),2 + (direction == 3)) = Detector_read(1, 100);
+        Piezo_MVR_1D(direction, - 2*current_stepsize), pause(pause_time);
+        data(2 - (direction == 1),2 - (direction == 2),2 - (direction == 3)) = Detector_read(1, 100);
+        Piezo_MVR_1D(direction, current_stepsize), pause(pause_time);
+    end
+    % find which point gets the maximum counts, and move to that point
+    index = find(data == max(data(:)), 1, 'first');
+    [ind1, ind2, ind3] = ind2sub([3,3,3], index);
+    ind = [ind1, ind2, ind3];
+    direction = find(ind ~= 2, 1, 'first'); 
+    if (~ isempty(direction))
+        pm_sign = ind(direction) - 2;
+        Piezo_MVR_1D(direction, pm_sign .* current_stepsize), pause(pause_time);
+    end
+end
+
 function MW_power(pow)
     global Devices;
     s = [':POW ', num2str(pow), 'DBM'];
@@ -394,4 +400,56 @@ function MW_frequency(freq)
     global Devices;
     s = [':FREQ ', num2str(freq), 'GHz'];
     fprintf(Devices.MW,'%s\n',s);
+end
+
+function Piezo_MOV(X, Y, Z)
+    global Devices;
+    s = ['MOV 1 ',num2str(X),' 2 ',num2str(Y),' 3 ',num2str(Z)];
+    fprintf(Devices.Piezo,'%s\n', s);
+end
+
+function Piezo_MVR(X, Y, Z)
+    global Devices;
+    s = 'MVR ';
+    if (X ~= 0)
+        s = [s, '1 ', num2str(X)];
+    end
+    if (Y ~= 0)
+        s = [s, '2 ', num2str(Y)];
+    end
+    if (Z ~= 0)
+        s = [s, '3 ', num2str(Z)];
+    end
+    fprintf(Devices.Piezo,'%s\n', s);
+end
+
+function Piezo_MVR_1D(direction, stepsize)
+    global Devices;
+    s = ['MVR ', num2str(direction) ,' ', num2str(stepsize)];
+    fprintf(Devices.Piezo, '%s\n', s);
+end
+
+function count = Detector_read(round_num, time_ms)
+    global Devices;
+    if (nargin == 0)
+        round_num = 1;
+        time_ms = 10;
+    elseif (nargin == 1)
+        time_ms = 10;
+    end
+    if (time_ms == 10)
+        bit_num = 2;
+        ratio = 0.1;
+    elseif (time_ms == 100)
+        bit_num = 4;
+        ratio = 0.01;
+    end
+    count = 0;
+    for num = 1:round_num
+        fprintf(Devices.Detector,'%d', [bit_num]);
+        data_reader = fread(Devices.Detector, 6);
+        fprintf(Devices.Detector,'%d', [0]);
+        count = count + data_reader(4)*65536 + data_reader(5)*256 + data_reader(6);
+    end
+    count = count .* ratio ./ round_num;
 end

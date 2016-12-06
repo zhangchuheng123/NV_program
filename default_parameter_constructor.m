@@ -20,4 +20,12 @@ function parameters = default_parameter_constructor(stage_name)
 	parameters.figure.identifier = 'default_identifier_';
 	% automatically save data and figure : Yes -> 1 | No -> 0
 	parameters.figure.is_save = 1; 
+
+	% step size for calibration
+	parameters.calibration.step_size = 0.1;
+	% step size decay
+	parameters.calibration.half_decay_iter_number = inf;
+	% pause time of each MVR
+	parameters.calibration.pause_time = 0.1;
+
 end
