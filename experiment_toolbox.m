@@ -464,3 +464,20 @@ function count = Detector_read(round_num, time_ms)
     end
     count = count .* ratio ./ round_num;
 end
+
+function AWG_set_freq_MHz(channel, freq_MHz)
+    global Devices;
+    s = ['SOURCE',num2str(channel),':FREQUENCY ',num2str(freq_MHz), 'MHZ'];
+    fprintf(Devices.AWG, '%s\n', s);
+end
+
+function AWG_set_amp_voltage(channel, Vpp)
+    global Devices;
+    s = ['SOURCE',num2str(channel),':VOLTAGE:AMPLITUDE ',num2str(freq_MHz), 'MHZ'];
+    fprintf(Devices.AWG, '%s\n', s);
+end
+
+function AWG_waveform_delete_all
+    global Devices;
+    fprintf(Devices.AWG, '%s\n', 'WLIST:WAVEFORM:DELETE ALL');
+end
