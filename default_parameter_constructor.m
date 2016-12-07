@@ -27,5 +27,10 @@ function parameters = default_parameter_constructor(stage_name)
 	parameters.calibration.half_decay_iter_number = inf;
 	% pause time of each MVR
 	parameters.calibration.pause_time = 0.1;
+    
+    % whether do calibration between ESR or not
+    parameters.esr.calibration_in_esr = 1;
+    % number of round of calibration
+    parameters.esr.calibration_interval = 10;
 
 end

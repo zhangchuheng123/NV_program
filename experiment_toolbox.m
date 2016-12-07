@@ -299,6 +299,11 @@ function ESR(freq, pow, loop)
             MW_frequency(freq(k)), pause(0.03);
             ESR_data(k) = ESR_data(k) + Detector_read(loop(2), 100);
             
+            if (parameters.esr.calibration_in_esr == 1)
+                if (mod(count, parameters.esr.calibration_interval) == 0)
+                    calibration(5);
+                end
+            end
             % update processing bar
             count = count + 1;
             ratio = count ./ total_count;
