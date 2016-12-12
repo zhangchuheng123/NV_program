@@ -33,4 +33,19 @@ function parameters = default_parameter_constructor(stage_name)
     % number of round of calibration
     parameters.esr.calibration_interval = 10;
 
+    % AWG sample rate -> 1GHz = 1000kHz
+    parameters.AWG.sample_rate = 1000;
+    % whether there's bug in AWG
+    parameters.AWG.is_detect_bug = 0;
+    % path of AWG temp file
+    parameters.AWG.path = 'AWG\ZhangChuheng\LaserDelay_IQ'
+    % AWG loop time
+    parameters.AWG.loop_time = 50000; % 50000ns = 50us
+
+    parameters.laser_delay.length = 12; % 12000ns = 12us
+    parameters.laser_delay.total_length_time = parameters.laser_delay.length * parameters.AWG.sample_rate; 
+    parameters.laser_delay.loop_standard = 5;
+    parameters.laser_delay.laser_init_time = 2000; % 2000ns = 2us
+    parameters.laser_delay.detection_duration_time = 300; % 300ns
+
 end

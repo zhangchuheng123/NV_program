@@ -6,50 +6,6 @@ function tools = experiment_toolbox
     tools.calibration = @calibration;
 end
 
-function NVCoordinate(F, NVposition)
-	% the position of four markers
-	% in matlab view            in UV
-	%  F1+----------+F2         F4+----------+F2
-	%    |          |             |          |
-	%    |          |             |          |
-	%    |          |   --->      |          |
-	%    |          |             |          |
-	%  F3+----------+F4         F3+----------+F1
-	%
-	% in UV order
-	%  F3+----------+F4
-	%    |          |
-	%    |          |     ^ y
-	%    |          |     |
-	%    |          |     |
-	%  F1+----------+F2   :---> x
-
-	% Program area
-	% standard marker relative position
-	S=[0 30 0 30; 0 0 30 30];
-
-	F = [F(:,3), F(:,1), F(:,4), F(:,2)];
-	S = [S(:,3), S(:,1), S(:,4), S(:,2)];
-
-	fprintf('\nFour markers (XY in UV order): (%.1f, %.1f) (%.1f, %.1f) (%.1f, %.1f) (%.1f, %.1f) \n', ...
-	    F(1,1), F(2,1), F(1,2), F(2,2), F(1,3), F(2,3), F(1,4), F(2,4));
-	Fa=F(:,2)-F(:,1);
-	Fb=F(:,3)-F(:,1);
-	Sa=S(:,2)-S(:,1);
-	Sb=S(:,3)-S(:,1);
-
-	Fab=[Fa Fb];
-	Fx=F(:,4)-F(:,1);
-	AB=Fab\Fx;
-	Sd=AB(1)*Sa+AB(2)*Sb;
-	deltaxy=Sd-(S(:,4)-S(:,1));
-	fprintf('deltaxy (XY) = (%.3f, %.3f) \n', deltaxy(1), deltaxy(2));
-
-	tm=Fab\(NVposition-F(:,1));
-	NVture=tm(1)*Sa+tm(2)*Sb;
-	fprintf('NVture (in UV direction) = (%.3f, %.3f) \n', -NVture(2), NVture(1));
-end
-
 function Initializer(device_name)
 	global Devices parameters;
 	if (isempty(Devices))
@@ -125,8 +81,6 @@ function scan(X, Y, Z, CountNum, Z0)
 
     scan_pause_time = parameters.scan.scan_pause_time;
     scan_pause_time_long = parameters.scan.scan_pause_time_long;
-    isSave = parameters.figure.is_save;
-    identifier = parameters.figure.identifier;
 
     Piezo_MOV(X(1), Y(1), Z(1)), pause(1);
     Detector_read();
@@ -177,8 +131,8 @@ function scan(X, Y, Z, CountNum, Z0)
 
     fig_hdl = scan_plot(X, Y, Z, data, Z0);
 
-    if (isSave == 1)
-        auto_save(fig_hdl, X, Y, Z, data, identifier);
+    if (parameters.figure.is_save == 1)
+        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier， '-Scan');
     end
 end 
 
@@ -247,15 +201,21 @@ function fig_hdl = scan_plot(X, Y, Z, data, Z0)
     end
 end
 
-function auto_save(fig_hdl, X, Y, Z, data, identifier)
+function auto_save(fig_hdl, X, Y, Z, data, identifier, folder_name)
+    % save figure described by fig_hdl and (XYZ & data)
+
     XYZ = {X, Y, Z};
-    %% auto save for data and figure
-    str_date = datestr(now,'yyyymmdd');
     
     % maximize the window of the figure
     set(fig_hdl,'outerposition',get(0,'screensize'));
     fig_hdl.PaperPositionMode = 'auto';
     
+    %% auto save for data and figure
+    if (nargin == 6)
+        str_date = datestr(now,'yyyymmdd');
+    else
+        str_date = [datestr(now,'yyyymmdd'), folder_name];
+    end
     figure_dir = ['fig/fig', str_date];
     data_dir = ['data/data', str_date];
 
@@ -315,20 +275,20 @@ function ESR(freq, pow, loop)
         end
     end
     ESR_data = ESR_data ./ loop(1);
-    fig_hdl = ESR_plot(freq, ESR_data);
+    fig_hdl = ESR_plot(freq, pow, ESR_data);
     if (parameters.figure.is_save == 1)
         X = freq;
-        auto_save(fig_hdl, X, 1, 1, ESR_data, parameters.figure.identifier);
+        auto_save(fig_hdl, X, 1, 1, ESR_data, parameters.figure.identifier, '-ESR');
     end
     MW_turnoff;
 end
 
-function fig_hdl = ESR_plot(freq, data)
+function fig_hdl = ESR_plot(freq, pow, data)
     fig_hdl = figure;
     plot(freq, data);
     xlabel('frequency(GHz)');
     ylabel('fluorescent(kilo count/s)');
-    title('ESR Scan');
+    title(sprintf('ESR Scan power = %.1f dBm', pow));
 end
 
 function calibration(count, position)
@@ -388,6 +348,173 @@ function calibration_once(current_stepsize)
     end
 end
 
+function result = LaserDelay_IQ_main(delay_time, IQ_phase, ...
+    MWFreq, MWPower, AWGVpp1, AWGVpp2, AWGVpp3, loop_repeat, Count)
+
+    % all the time units are counted in ns
+    % delay_time : ~1000ns 
+
+    % !!!!!! unfinished
+
+    global parameters;
+
+    Sample_rate = parameters.AWG.sample_rate;
+    loop_standard = parameters.laser_delay.loop_standard; % 5
+    laser_init_time = parameters.laser_delay.laser_init_time;
+    detection_duration_time = parameters.laser_delay.detection_duration_time;
+    total_length_time = parameters.laser_delay.total_length_time;
+    
+    CalibrationTotal = 0;
+    CaliTotal = 0;
+
+    % Initialization devices
+    AWG_set_freq_MHz(1, Sample_rate);
+    AWG_set_amp_voltage(1, AWGVpp1);
+    AWG_set_amp_voltage(2, AWGVpp2);
+    AWG_set_amp_voltage(3, AWGVpp3);
+
+    MW_channel(1);
+    MW_frequency(MWFreq, 'M'); 
+    MW_power(MWPower);
+
+    Data_raw = [];
+    Data_ratio = [];
+    ancilla_1 = [];
+    count_repeat = loop_repeat / loop_standard;
+    pausetime = loop_standard * Length * 0.05 + 1.5;
+    ancilla_2 = [];
+    cali_flag = 0;
+
+    % Read 100ms
+    data = Detector_read(1, 100);
+
+    Threshold_fix = Count/10;
+
+    for delay_time_item = delay_time
+
+        Zero_waveform = zeros(1,3);
+        Zero_waveform(1,2) = Total;
+
+        sig_start_time = total_length_time - 3000;
+        ref_start_time = total_length_time - 1000;
+
+        Laser_waveform = [0, laser_init_time, 1;
+                          laser_init_time, sig_start_time - delay_time_item, 0;
+                          sig_start_time - delay_time_item, total_length_time, 1];
+
+        Sig_waveform = [0, sig_start_time, 0;
+                        sig_start_time, sig_start_time + detection_duration_time, 1;
+                        sig_start_time + detection_duration_time, total_length_time, 0];
+
+        Ref_waveform = [0, ref_start_time, 0;
+                        ref_start_time, ref_start_time + detection_duration_time, 1;
+                        ref_start_time + detection_duration_time, total_length_time, 0];
+
+        A_analog = Zero_waveform;
+        A_Digi1 = Laser_waveform;   % Channel 1 Digital 1 -> AOM -> Laser
+        A_Digi2 = Zero_waveform;
+
+        B_analog = Zero_waveform;
+        B_Digi1 = Sig_waveform;     % Channel 2 Digital 1\2 -> FPGA -> Detector
+        B_Digi2 = Ref_waveform;
+
+        C_analog = Zero_waveform;
+        C_Digi1 = Zero_waveform;
+        C_Digi2 = Zero_waveform;
+        
+        A1 = wave_generator(A_analog, Length);
+        A2 = wave_generator(A_Digi1, Length);
+        A3 = wave_generator(A_Digi2, Length);
+        AWG_wave_ch1 = reshape([A1,A2,A3]',[],3);
+        
+        B1 = wave_generator(B_analog, Length);
+        B2 = wave_generator(B_Digi1, Length);
+        B3 = wave_generator(B_Digi2, Length);
+        AWG_wave_ch2 = reshape([B1,B2,B3]',[],3);
+        
+        C1 = wave_generator(C_analog, Length);;
+        C2 = wave_generator(C_Digi1, Length);
+        C3 = wave_generator(C_Digi1, Length);
+        AWG_wave_ch3 = reshape([C1,C2,C3]',[],3);
+        
+        local_path = ['E:\', parameters.AWG.path];
+        if (~exist(local_path))
+            mkdir(local_path);
+        end
+        csvwrite([local_path, 'AWG_wave_ch1'], AWG_wave_ch1);
+        csvwrite([local_path, 'AWG_wave_ch2'], AWG_wave_ch2);
+        csvwrite([local_path, 'AWG_wave_ch3'], AWG_wave_ch3);
+        AWG_string('MMEMORY:IMPORT "AWG_wave_ch1","Z:\AWG\LaserDelay_IQ\AWG_wave_ch1.txt",TXT');
+        AWG_string('MMEMORY:IMPORT "AWG_wave_ch1","Z:\AWG\LaserDelay_IQ\AWG_wave_ch2.txt",TXT');
+        AWG_string('MMEMORY:IMPORT "AWG_wave_ch1","Z:\AWG\LaserDelay_IQ\AWG_wave_ch3.txt",TXT');
+        
+        AWG_run;
+        
+    end
+
+    Data_Save_LaserDelay_IQ;
+    saveas(gcf,Save_fig);
+    result = 0;
+
+end
+
+function A = wave_generator(Waveform, Length)
+% Input:
+% Sample_rate       kHz
+% Length            how many seconds (?)
+
+% Waveform format:
+% 3     [start_point, end_point, Digital_value]
+% 5     [start_point, end_point, Freq, Phase, Amplitude]
+% 6     [start_point, end_point, Freq, Phase, Amplitude, Delay]
+% 8     [start_point, end_point, Freq1, Phase1, Amplitude1, Freq2, Phase2, Amplitude2]
+% 9     [start_point, end_point, Freq1, Phase1, Amplitude1, Freq2, Phase2, Amplitude2, Delay]
+
+    global parameters;
+    Sample_rate = parameters.AWG.sample_rate;
+    Total = Length*Sample_rate;
+    A = [];
+    [dimx,dimy] = size(Waveform); 
+    if ((dimy == 5) || (dimy == 6))
+        for i = 1:dimx
+            B = round(Waveform(i,1)):round(Waveform(i,2)-1);
+            C = Waveform(i,5)*sin(2 * pi * Waveform(i,3) / Sample_rate * B + Waveform(i,4));
+            if (dimy == 6)
+                Delay = zeros(1,round(Waveform(i,6)));
+            elseif (dimy == 5)
+                if (i < dimx)
+                    Delay = zeros(1,round(Waveform(i+1,1)-Waveform(i,2)));
+                elseif (i == dimx)
+                    Delay = zeros(1,round(Total-Waveform(i,2)));
+                end
+            end
+            A = [A, C, Delay];
+        end
+        
+    elseif ((dimy == 9) || (dimy == 8))
+        for i = 1:dimx
+            B = round(Waveform(i,1)):round((Waveform(i,2)-1));
+            C = Waveform(i,5)*sin(2 * pi * Waveform(i,3) / Sample_rate * B + Waveform(i,4)) +  Waveform(i,8)*sin(2 * pi * Waveform(i,6) / Sample_rate * B + Waveform(i,7));
+            if (dimy == 9)
+                Delay = zeros(1,round(Waveform(i,9)));
+            elseif (dimy == 8)
+                if (i < dimx)
+                     Delay = zeros(1,round(Waveform(i+1,1)-Waveform(i,2)));
+                elseif (i == dimx)
+                    Delay = zeros(1,round(Total-Waveform(i,2)));
+                end
+            end
+            A = [A, C, Delay];
+        end
+        
+    elseif (dimy == 3) 
+        for i = 1:dimx
+            C = Waveform(i,3) * ones(1,round(Waveform(i,2)) - round(Waveform(i,1)));
+            A = [A, C];
+        end
+    end
+end
+
 function MW_power(pow)
     global Devices;
     s = [':POW ', num2str(pow), 'DBM'];
@@ -401,15 +528,24 @@ function MW_turnon
     pause(0.1);
 end
 
+function MW_channel(channel)
+    global Devices;
+    fprintf(Devices.MW,'%s %s\n', ':OUTP', num2str(channel));
+    pause(0.1);
+end
+
 function MW_turnoff
     global Devices;
     fprintf(Devices.MW,'%s\n',':OUTP OFF');
     pause(0.1);
 end
 
-function MW_frequency(freq)
+function MW_frequency(freq, amount)
     global Devices;
-    s = [':FREQ ', num2str(freq), 'GHz'];
+    if (nargin == 1)
+        amount = 'G';
+    end
+    s = [':FREQ ', num2str(freq), amount, 'Hz'];
     fprintf(Devices.MW,'%s\n',s);
 end
 
@@ -480,4 +616,153 @@ end
 function AWG_waveform_delete_all
     global Devices;
     fprintf(Devices.AWG, '%s\n', 'WLIST:WAVEFORM:DELETE ALL');
+end
+
+function AWG_string(str)
+    global Devices;
+    fprintf(Devices.AWG, '%s\n', str);
+end
+
+function AWG_run
+    ancilla_2lowerbound = 0;
+    ancilla_2upperbound = 1.05;
+    inconsistencytol = 30; %%check the maximal inconsistency tolorence relative to sqrt(), default value 3-4;
+    loop_standard = parameters.laser_delay.loop_standard;
+    
+    AWGloop = parameters.AWG.loop_time;
+
+    AWG_string('AWGControl:RMODE SEQUENCE');
+
+    s = ['SEQUENCE:LENGTH ', num2str(loop_standard)];
+    fprintf(AWG, '%s\n', s);
+    for i = 1:loop_standard
+        s1 = ['SEQUENCE:ELEMENT', num2str(i), ':WAVEFORM1', ' "AWG_wave_ch1"'];
+        fprintf(AWG, '%s\n', s1);
+        s2 = ['SEQUENCE:ELEMENT', num2str(i), ':WAVEFORM2', ' "AWG_wave_ch2"'];
+        fprintf(AWG, '%s\n', s2);
+        s4 = ['SEQUENCE:ELEMENT', num2str(i), ':LOOP:COUNT ', num2str(AWGloop)];
+        fprintf(AWG, '%s\n', s4);
+    end
+    fprintf(AWG, '%s\n', 'OUTPUT1:STATE ON');
+    fprintf(AWG, '%s\n', 'OUTPUT2:STATE ON');
+
+    fprintf(['Threshold_fix:',num2str(Threshold_fix)]);
+    Cali_back;
+
+    while (count_loop < count_repeat)
+        count_loop = count_loop + 1;
+        ContCaliNum = 0;
+        
+        disp(['   now is measurement', num2str(j), ' count_loop', num2str(count_loop)]);
+        disp(['   now the total calibration is ', num2str(CalibrationTotal)]);
+        if ( (j > 1) || (count_loop > 1))
+            Cali_back;
+        end
+        
+        fprintf(AWG, '%s\n', 'AWGCONTROL:RUN');
+        pause(pausetime);
+        fprintf(Detector, '%d', [1]);
+        Data_temp = fread(Detector, 6);
+        ancilla_1(count_loop) = Data_temp(1)*65536 + Data_temp(2)*256 + Data_temp(3)
+        ancilla_2(count_loop) = Data_temp(4)*65536 + Data_temp(5)*256 + Data_temp(6)
+        fprintf(Detector, '%d', [0]);
+        if ( ancilla_2(count_loop) == 0 )
+            j = j - 1;
+            Detect_bug = 1;
+            fprintf('Detect_bug in AWG_run!\n');
+            break;
+            
+        else
+            Threshold = loop_standard*Detect_duration*10^-9*Count*AWGloop;
+            if ( (j == 1) && (count_loop == 1))
+                if ( ( ancilla_2(count_loop) > (ancilla_2lowerbound*loop_standard*Detect_duration*10^-9*Count*AWGloop)) && ( ancilla_2(count_loop) < (ancilla_2upperbound*loop_standard*Detect_duration*10^-9*Count*AWGloop)))
+                    Threshold = loop_standard*Detect_duration*10^-9*Count*AWGloop;
+                else
+                    if ( ancilla_2(count_loop) < (ancilla_2lowerbound*loop_standard*Detect_duration*10^-9*Count*AWGloop))
+                        disp('ancilla_2 lowerbound reached while start the loop' )
+                    else
+                        disp('ancilla_2 upperbound reached while start the loop' )
+                    end
+                    disp(['   now is calibration']);
+                    Cali_back;
+                    count_loop = count_loop - 1;
+                end
+                
+            else if ((ancilla_2(count_loop) < ancilla_2lowerbound*Threshold) || (ancilla_2(count_loop) > ancilla_2upperbound*Threshold) || (ancilla_1(count_loop) < 0.5*Threshold) || (ancilla_1(count_loop) > 1.3*Threshold))
+                    
+                    if (ancilla_2(count_loop) < ancilla_2lowerbound*Threshold)
+                        disp('ancilla_2 lowerbound reached while in the loop')
+                        fprintf([num2str(ancilla_2(count_loop)),'<',num2str(ancilla_2lowerbound*Threshold)]);
+                    end
+                    if (ancilla_2(count_loop) > ancilla_2upperbound*Threshold)
+                        disp('ancilla_2 upperbound reached while in the loop')
+                    end
+                    disp(['   now is calibration']);
+                    count_loop = count_loop-1;
+                    CalibrationTotal = CalibrationTotal + 1;
+                    Cali_back;
+                end
+            end
+        end
+    end
+    %% check the data consistency
+    if ( (max(abs(ancilla_2-mean(ancilla_2))) > inconsistencytol*mean(sqrt(ancilla_2)) ...
+            ||  max(abs(ancilla_1-mean(ancilla_1))) > inconsistencytol*mean(sqrt(ancilla_1)) )...
+            && Detect_bug~=1 )
+        j = j - 1;
+        Detect_bug = 1;
+        fprintf('data inconsistent!  %d\n',Cnt_det_bug+1);
+        if max(abs(ancilla_2-mean(ancilla_2))) > inconsistencytol*mean(sqrt(ancilla_2))
+            fprintf(['ancilla_2',num2str(ancilla_2)]);
+        else
+            fprintf(['ancilla_1',num2str(ancilla_1)]);
+        end
+    end
+    %%
+    ancilla_1_total = sum(ancilla_1);
+    ancilla_2_total = sum(ancilla_2);
+end
+
+function NVCoordinate(F, NVposition)
+    % the position of four markers
+    % in matlab view            in UV
+    %  F1+----------+F2         F4+----------+F2
+    %    |          |             |          |
+    %    |          |             |          |
+    %    |          |   --->      |          |
+    %    |          |             |          |
+    %  F3+----------+F4         F3+----------+F1
+    %
+    % in UV order
+    %  F3+----------+F4
+    %    |          |
+    %    |          |     ^ y
+    %    |          |     |
+    %    |          |     |
+    %  F1+----------+F2   :---> x
+
+    % Program area
+    % standard marker relative position
+    S=[0 30 0 30; 0 0 30 30];
+
+    F = [F(:,3), F(:,1), F(:,4), F(:,2)];
+    S = [S(:,3), S(:,1), S(:,4), S(:,2)];
+
+    fprintf('\nFour markers (XY in UV order): (%.1f, %.1f) (%.1f, %.1f) (%.1f, %.1f) (%.1f, %.1f) \n', ...
+        F(1,1), F(2,1), F(1,2), F(2,2), F(1,3), F(2,3), F(1,4), F(2,4));
+    Fa=F(:,2)-F(:,1);
+    Fb=F(:,3)-F(:,1);
+    Sa=S(:,2)-S(:,1);
+    Sb=S(:,3)-S(:,1);
+
+    Fab=[Fa Fb];
+    Fx=F(:,4)-F(:,1);
+    AB=Fab\Fx;
+    Sd=AB(1)*Sa+AB(2)*Sb;
+    deltaxy=Sd-(S(:,4)-S(:,1));
+    fprintf('deltaxy (XY) = (%.3f, %.3f) \n', deltaxy(1), deltaxy(2));
+
+    tm=Fab\(NVposition-F(:,1));
+    NVture=tm(1)*Sa+tm(2)*Sb;
+    fprintf('NVture (in UV direction) = (%.3f, %.3f) \n', -NVture(2), NVture(1));
 end
