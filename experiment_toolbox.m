@@ -132,7 +132,7 @@ function scan(X, Y, Z, CountNum, Z0)
     fig_hdl = scan_plot(X, Y, Z, data, Z0);
 
     if (parameters.figure.is_save == 1)
-        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier， '-Scan');
+        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-Scan');
     end
 end 
 
@@ -663,15 +663,14 @@ function AWG_run
         pause(pausetime);
         fprintf(Detector, '%d', [1]);
         Data_temp = fread(Detector, 6);
-        ancilla_1(count_loop) = Data_temp(1)*65536 + Data_temp(2)*256 + Data_temp(3)
-        ancilla_2(count_loop) = Data_temp(4)*65536 + Data_temp(5)*256 + Data_temp(6)
+        ancilla_1(count_loop) = Data_temp(1)*65536 + Data_temp(2)*256 + Data_temp(3);
+        ancilla_2(count_loop) = Data_temp(4)*65536 + Data_temp(5)*256 + Data_temp(6);
         fprintf(Detector, '%d', [0]);
         if ( ancilla_2(count_loop) == 0 )
-            j = j - 1;
+            % j = j - 1;
             Detect_bug = 1;
             fprintf('Detect_bug in AWG_run!\n');
             break;
-            
         else
             Threshold = loop_standard*Detect_duration*10^-9*Count*AWGloop;
             if ( (j == 1) && (count_loop == 1))
@@ -709,7 +708,7 @@ function AWG_run
     if ( (max(abs(ancilla_2-mean(ancilla_2))) > inconsistencytol*mean(sqrt(ancilla_2)) ...
             ||  max(abs(ancilla_1-mean(ancilla_1))) > inconsistencytol*mean(sqrt(ancilla_1)) )...
             && Detect_bug~=1 )
-        j = j - 1;
+        %j = j - 1;
         Detect_bug = 1;
         fprintf('data inconsistent!  %d\n',Cnt_det_bug+1);
         if max(abs(ancilla_2-mean(ancilla_2))) > inconsistencytol*mean(sqrt(ancilla_2))

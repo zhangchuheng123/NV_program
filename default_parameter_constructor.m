@@ -38,7 +38,7 @@ function parameters = default_parameter_constructor(stage_name)
     % whether there's bug in AWG
     parameters.AWG.is_detect_bug = 0;
     % path of AWG temp file
-    parameters.AWG.path = 'AWG\ZhangChuheng\LaserDelay_IQ'
+    parameters.AWG.path = 'AWG\ZhangChuheng\LaserDelay_IQ';
     % AWG loop time
     parameters.AWG.loop_time = 50000; % 50000ns = 50us
 
