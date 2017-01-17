@@ -8,7 +8,16 @@ function parameters = default_parameter_constructor(stage_name)
 		parameters.AWG.ip_port = 4000;
 		parameters.MW.ip_name = '192.168.54.4';
 		parameters.MW.ip_port = 5025;
+	elseif (strcmp(parameters.stage, 'lab1-jiang'))
+		parameters.Piezo.ip_name = '192.168.13.2';
+		parameters.Piezo.ip_port = 50000;
+		parameters.Detector.com_name = 'com8';
+		parameters.AWG.ip_name = '192.168.13.6';
+		parameters.AWG.ip_port = 4005;
+		parameters.MW.ip_name = '192.168.13.5';
+		parameters.MW.ip_port = 5025;
 	end
+		
 
 	% waiting time between each sample point
 	% how to calculate pause time : piezo velocity 1000um/s, fixed time for movement: 50~100ms
