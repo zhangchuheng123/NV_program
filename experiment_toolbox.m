@@ -1,6 +1,7 @@
 function tools = experiment_toolbox
 	tools.Initializer = @Initializer;
 	tools.scan = @scan;
+    tools.scan_mirror = @scan_mirror;
     tools.ESR = @ESR;
     tools.calibration = @calibration;
 end
@@ -17,7 +18,7 @@ function Initializer(device_name)
 	    pause(0.1);
 	    fprintf(Piezo,'%s\n','SVO 1 1 2 1 3 1');
 	    pause(0.1);
-	    fprintf(Piezo,'%s\n','VCO 1 1 2 1 3 1');
+	    fprintf(Piezo,'%s\n','VCO 1 1 2 1 3 1');  
 	    pause(0.1);
 	    fprintf(Piezo,'%s\n','DCO 1 1 2 1 3 1');
 	    pause(0.1);
@@ -47,11 +48,83 @@ function Initializer(device_name)
         Devices.AWG = AWG;
         fprintf('AWG: Initialization finished\n');
 	elseif ( strcmp(device_name, 'MIR') && (~isfield(Devices, 'MIR')) )
-        AWG = tcpip(parameters.AWG.ip_name, parameters.AWG.ip_port);
-        fopen(AWG);
-        Devices.AWG = AWG;
-        fprintf('AWG: Initialization finished\n');
+        MIR = serial('com10');
+        % MIR.Terminator = 'CR';
+        MIR.BaudRate = 2000000;
+        MIR.StopBits = 2;
+        fopen(MIR);
+        Devices.MIR = MIR;
+        % MIR_output(0, 0);
+        % MIR_output(-300, 340);
+        fprintf('MIR: Initialization finished\n');
     end  
+end
+
+function scan_mirror(X, Y, CountNum, Z0)
+    %   author:   Zhang Chuheng 
+    %   email:    zhangchuheng123 (AT) gmail.com
+    %   home:     zhangchuheng123.github.io
+    %   github:   zhangchuheng123
+    % Date:     
+    %   Establish:          Jan. 18, 2017
+
+    global Devices parameters;
+
+    if (nargin == 3)
+        Z0 = 0;
+    end
+
+    % Check for initialization
+    if ( (isempty(Devices)) || (~isfield(Devices, 'Detector')) )
+        Initializer('Piezo');       
+    end
+    if ( (isempty(Devices)) || (~isfield(Devices, 'MIR')) )
+        Initializer('MIR');      
+    end
+
+    MIR_output(X(0), Y(0)), pause(0.2);
+    Detector_read();
+
+    data = zeros(numel(X), numel(Y), 1);
+    total_count = numel(X) * numel(Y);
+    count = 0;
+
+    hwait=waitbar(0, 'Please wait...', 'Name', 'Mirror Scanning...');
+    c = onCleanup(@()close(hwait));
+
+    tic;
+    
+    for ind2 = 1:numel(Y)
+
+        if (mod(ind2, 2) == 1)
+            ind1_list = 1:numel(X);
+        else
+            ind1_list = numel(X):-1:1;
+        end
+
+        for ind1 = ind1_list
+            MIR_output(X(ind1), Y(ind2));
+
+            % read data
+            ancilla = Detector_read(CountNum);
+            data(ind1, ind2, 1) = ancilla;
+
+            % update processing bar
+            count = count + 1;
+            ratio = count ./ total_count;
+            t = toc;
+            remaining_time = fix(t ./ ratio .* (1 - ratio));
+            str = sprintf('count at (%.1f, %.1f) = %.1f Now processing %.1f %% \n Time remaining %d s', ...
+                X(ind1), Y(ind2), ancilla, fix(ratio .* 1000)/10, remaining_time);
+            waitbar(ratio, hwait, str);
+        end
+    end
+
+    fig_hdl = scan_plot(X, Y, 1, data, Z0);
+
+    if (parameters.figure.is_save == 1)
+        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-MirrorScan');
+    end
 end
 
 function scan(X, Y, Z, CountNum, Z0)
@@ -552,6 +625,29 @@ function MW_frequency(freq, amount)
     s = [':FREQ ', num2str(freq), amount, 'Hz'];
     fprintf(Devices.MW,'%s\n',s);
 end
+
+function MIR_output(X, Y)
+    %% move mir to the position (x,y)
+    global Devices;
+
+    byte_length = 2^8;
+
+    ctrl_B = 1*(2^12);  
+    ctrl_A = 8*(2^12);
+
+    volt_A = 2440 + Y; % y
+    volt_B = 1650 + X; % x
+
+    cmd_A = ctrl_A + volt_A;         
+    cmd_A = floor(cmd_A/byte_length) + byte_length * mod(cmd_A, byte_length);
+
+    cmd_B = ctrl_B + volt_B;            
+    cmd_B = floor(cmd_B/2^8) + 2^8*mod(cmd_B,2^8);
+
+    fwrite(Devices.MIR, cmd_B, 'uint16');
+    fwrite(Divices.MIR, cmd_A, 'uint16');        
+end
+
 
 function Piezo_MOV(X, Y, Z)
     global Devices;
