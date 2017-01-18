@@ -60,7 +60,7 @@ function Initializer(device_name)
     end  
 end
 
-function scan_mirror(X, Y, CountNum, Z0)
+function scan_mirror(X, Y, Z_rel, CountNum, Z0)
     %   author:   Zhang Chuheng 
     %   email:    zhangchuheng123 (AT) gmail.com
     %   home:     zhangchuheng123.github.io
@@ -70,23 +70,28 @@ function scan_mirror(X, Y, CountNum, Z0)
 
     global Devices parameters;
 
-    if (nargin == 3)
+    if (nargin == 4)
         Z0 = 0;
     end
 
     % Check for initialization
     if ( (isempty(Devices)) || (~isfield(Devices, 'Detector')) )
+        Initializer('Detector');       
+    end
+    if ( (isempty(Devices)) || (~isfield(Devices, 'Piezo')) )
         Initializer('Piezo');       
     end
     if ( (isempty(Devices)) || (~isfield(Devices, 'MIR')) )
         Initializer('MIR');      
     end
 
+    scan_pause_time_long = parameters.scan.scan_pause_time_long;
+
     MIR_output(X(0), Y(0)), pause(0.2);
     Detector_read();
 
-    data = zeros(numel(X), numel(Y), 1);
-    total_count = numel(X) * numel(Y);
+    data = zeros(numel(X), numel(Y), numel(Z_rel));
+    total_count = numel(X) * numel(Y) * numel(Z_rel);
     count = 0;
 
     hwait=waitbar(0, 'Please wait...', 'Name', 'Mirror Scanning...');
@@ -94,36 +99,39 @@ function scan_mirror(X, Y, CountNum, Z0)
 
     tic;
     
-    for ind2 = 1:numel(Y)
+    for ind3 = 1:numel(Z_rel)
+        Piezo_MVR(0, 0, Z_rel(ind3)), pause(scan_pause_time_long);
+        for ind2 = 1:numel(Y)
 
-        if (mod(ind2, 2) == 1)
-            ind1_list = 1:numel(X);
-        else
-            ind1_list = numel(X):-1:1;
-        end
+            if (mod(ind2, 2) == 1)
+                ind1_list = 1:numel(X);
+            else
+                ind1_list = numel(X):-1:1;
+            end
 
-        for ind1 = ind1_list
-            MIR_output(X(ind1), Y(ind2));
+            for ind1 = ind1_list
+                MIR_output(X(ind1), Y(ind2));
 
-            % read data
-            ancilla = Detector_read(CountNum);
-            data(ind1, ind2, 1) = ancilla;
+                % read data
+                ancilla = Detector_read(CountNum);
+                data(ind1, ind2, ind3) = ancilla;
 
-            % update processing bar
-            count = count + 1;
-            ratio = count ./ total_count;
-            t = toc;
-            remaining_time = fix(t ./ ratio .* (1 - ratio));
-            str = sprintf('count at (%.1f, %.1f) = %.1f Now processing %.1f %% \n Time remaining %d s', ...
-                X(ind1), Y(ind2), ancilla, fix(ratio .* 1000)/10, remaining_time);
-            waitbar(ratio, hwait, str);
+                % update processing bar
+                count = count + 1;
+                ratio = count ./ total_count;
+                t = toc;
+                remaining_time = fix(t ./ ratio .* (1 - ratio));
+                str = sprintf('count at (%.1f, %.1f) = %.1f Now processing %.1f %% \n Time remaining %d s', ...
+                    X(ind1), Y(ind2), ancilla, fix(ratio .* 1000)/10, remaining_time);
+                waitbar(ratio, hwait, str);
+            end
         end
     end
 
-    fig_hdl = scan_plot(X, Y, 1, data, Z0);
+    fig_hdl = scan_plot(X, Y, Z_rel+Z0, data, Z0);
 
     if (parameters.figure.is_save == 1)
-        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-MirrorScan');
+        auto_save(fig_hdl, X, Y, Z_rel+Z0, data, parameters.figure.identifier, '-MirrorScan');
     end
 end
 
@@ -667,7 +675,9 @@ function Piezo_MVR(X, Y, Z)
     if (Z ~= 0)
         s = [s, '3 ', num2str(Z)];
     end
-    fprintf(Devices.Piezo,'%s\n', s);
+    if ~strcmp(s, 'MVR ')
+        fprintf(Devices.Piezo,'%s\n', s);
+    end
 end
 
 function Piezo_MVR_1D(direction, stepsize)
