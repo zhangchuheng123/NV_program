@@ -87,12 +87,17 @@ function scan_mirror(X, Y, Z_rel, CountNum, Z0)
 
     scan_pause_time_long = parameters.scan.scan_pause_time_long;
 
-    MIR_output(X(0), Y(0)), pause(0.2);
+    MIR_output(X(1), Y(1)), pause(0.2);
     Detector_read();
 
     data = zeros(numel(X), numel(Y), numel(Z_rel));
     total_count = numel(X) * numel(Y) * numel(Z_rel);
     count = 0;
+    
+    if (total_count == 1)
+        fprintf('Move Mirror to position ... done');
+        return;
+    end
 
     hwait=waitbar(0, 'Please wait...', 'Name', 'Mirror Scanning...');
     c = onCleanup(@()close(hwait));
@@ -653,7 +658,7 @@ function MIR_output(X, Y)
     cmd_B = floor(cmd_B/2^8) + 2^8*mod(cmd_B,2^8);
 
     fwrite(Devices.MIR, cmd_B, 'uint16');
-    fwrite(Divices.MIR, cmd_A, 'uint16');        
+    fwrite(Devices.MIR, cmd_A, 'uint16');        
 end
 
 
