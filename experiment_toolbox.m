@@ -724,7 +724,7 @@ end
 
 function AWG_set_amp_voltage(channel, Vpp)
     global Devices;
-    s = ['SOURCE',num2str(channel),':VOLTAGE:AMPLITUDE ',num2str(freq_MHz), 'MHZ'];
+    s = ['SOURCE',num2str(channel),':VOLTAGE:AMPLITUDE ',num2str(Vpp), 'MHZ'];
     fprintf(Devices.AWG, '%s\n', s);
 end
 
