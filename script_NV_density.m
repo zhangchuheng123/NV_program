@@ -13,10 +13,20 @@ CountNum = 40;
 tools.scan(X, Y, Z, CountNum, 0);
 
 %% density scan
-Z0 = 19;
-X_vol = -400:2:400;
-Y_vol = -400:2:400;
-Z = [2, 5, 10, 20];
+Z0 = 17;
+X_vol = -100:2:100;
+Y_vol = -100:2:100;
+Z = [1,2,5,20];
 CountNum = 1;
 tools.scan(50, 50, Z0, 0);
 tools.scan_mirror(X_vol, Y_vol, Z, CountNum, Z0);
+
+%% density scan
+Z0 = 15.5;
+X = 30:0.5:70;
+Y = 30:0.5:70;
+Z = [2,5,10,20];
+Z = Z + Z0;
+CountNum = 1;
+tools.scan_mirror(0, 0, Z, 0, Z0);
+tools.scan(X, Y, Z, CountNum, Z0);

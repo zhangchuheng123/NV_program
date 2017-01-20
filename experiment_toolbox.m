@@ -89,6 +89,9 @@ function scan_mirror(X, Y, Z_rel, CountNum, Z0)
 
     MIR_output(X(1), Y(1)), pause(0.2);
     Detector_read();
+    if (CountNum == 0)
+        return;
+    end
 
     data = zeros(numel(X), numel(Y), numel(Z_rel));
     total_count = numel(X) * numel(Y) * numel(Z_rel);
