@@ -11,7 +11,7 @@ function init
 	if (isempty(Devices))
 		delete(instrfindall);
 	end
-	if ((strcmp(device_name, 'Piezo')) && (~isfield(Devices, 'Piezo')))
+	if (~isfield(Devices, 'Piezo'))
 		Piezo = tcpip(parameters.Piezo.ip_name, parameters.Piezo.ip_port);
 		fopen(Piezo);
 	    fprintf(Piezo,'%s\n','ONL 1 1 2 1 3 1');

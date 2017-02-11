@@ -12,7 +12,7 @@ function init
 	if (isempty(Devices))
 		delete(instrfindall);
 	end
-	if ( strcmp(device_name, 'MW') && (~isfield(Devices, 'MW')) )
+	if (~isfield(Devices, 'MW'))
         MW = tcpip(parameters.MW.ip_name, parameters.MW.ip_port);
         fopen(MW);
         Devices.MW = MW;

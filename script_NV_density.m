@@ -16,7 +16,7 @@ tools.scan(X, Y, Z, CountNum, 0);
 Z0 = 17;
 X_vol = -100:2:100;
 Y_vol = -100:2:100;
-Z = [1,2,5,20];
+Z = [1];
 CountNum = 1;
 tools.scan(50, 50, Z0, 0);
 tools.scan_mirror(X_vol, Y_vol, Z, CountNum, Z0);

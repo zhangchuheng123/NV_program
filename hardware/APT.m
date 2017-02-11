@@ -8,7 +8,7 @@ function init
 	if (isempty(Devices))
 		delete(instrfindall);
 	end
-	if ( strcmp(device_name, 'APT') && (~isfield(Devices, 'APT')) )
+	if (~isfield(Devices, 'APT'))
         if parameters.APT.is_show
             fpos = [0, 0, 100, 100];
             f1 = figure('Position', fpos, 'Menu','None', 'Name','APT GUI');

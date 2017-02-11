@@ -1,4 +1,4 @@
-function mir = MIR
+function mir = Mirror
 	mir.init = @init;
 	mir.is_init = @is_init;
 	mir.output = @output;
@@ -9,7 +9,7 @@ function init
 	if (isempty(Devices))
 		delete(instrfindall);
 	end
-	if ( strcmp(device_name, 'MIR') && (~isfield(Devices, 'MIR')) )
+	if (~isfield(Devices, 'MIR'))
         MIR = serial('com10');
         % MIR.Terminator = 'CR';
         MIR.BaudRate = 2000000;

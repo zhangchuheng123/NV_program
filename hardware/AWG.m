@@ -13,7 +13,7 @@ function init
 	if (isempty(Devices))
 		delete(instrfindall);
 	end
-	if ( strcmp(device_name, 'AWG') && (~isfield(Devices, 'AWG')) )
+	if (~isfield(Devices, 'AWG'))
         AWG = tcpip(parameters.AWG.ip_name, parameters.AWG.ip_port);
         fopen(AWG);
         Devices.AWG = AWG;
