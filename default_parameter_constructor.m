@@ -18,6 +18,7 @@ function parameters = default_parameter_constructor(stage_name)
 		parameters.MW.ip_port = 5025;
 		parameters.APT.SN1 = 83850683;
 		parameters.APT.SN2 = 83836232;
+		parameters.APT.is_show = false;
 	end
 		
 

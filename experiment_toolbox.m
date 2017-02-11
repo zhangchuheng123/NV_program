@@ -1,65 +1,10 @@
 function tools = experiment_toolbox
-	tools.Initializer = @Initializer;
+    addpath('hardware');
+    % Methods of toolbox
 	tools.scan = @scan;
     tools.scan_mirror = @scan_mirror;
     tools.ESR = @ESR;
     tools.calibration = @calibration;
-end
-
-function Initializer(device_name)
-	global Devices parameters;
-	if (isempty(Devices))
-		delete(instrfindall);
-	end
-	if ((strcmp(device_name, 'Piezo')) && (~isfield(Devices, 'Piezo')))
-		Piezo = tcpip(parameters.Piezo.ip_name, parameters.Piezo.ip_port);
-		fopen(Piezo);
-	    fprintf(Piezo,'%s\n','ONL 1 1 2 1 3 1');
-	    pause(0.1);
-	    fprintf(Piezo,'%s\n','SVO 1 1 2 1 3 1');
-	    pause(0.1);
-	    fprintf(Piezo,'%s\n','VCO 1 1 2 1 3 1');  
-	    pause(0.1);
-	    fprintf(Piezo,'%s\n','DCO 1 1 2 1 3 1');
-	    pause(0.1);
-	    fprintf(Piezo,'%s\n','VEL 1 1000 2 1000 3 1000');
-	    pause(0.1);
-	    Devices.Piezo = Piezo;
-        fprintf('Piezo: Initialization finished\n');
-	elseif ( strcmp(device_name, 'Detector') && (~isfield(Devices, 'Detector')) )
-		Detector = serial(parameters.Detector.com_name);
-	    Detector.Terminator = 'CR';
-	    Detector.BaudRate = 2000000;
-	    fopen(Detector);
-	    fprintf(Detector, '%d', [0]);
-	    fprintf(Detector, '%d', [1]);
-	    fread(Detector,6);
-	    fprintf(Detector, '%d', [0]);
-	    Devices.Detector = Detector;
-        fprintf('Detector: Initialization finished\n');
-	elseif ( strcmp(device_name, 'MW') && (~isfield(Devices, 'MW')) )
-        MW = tcpip(parameters.MW.ip_name, parameters.MW.ip_port);
-        fopen(MW);
-        Devices.MW = MW;
-        fprintf('MW: Initialization finished\n');
-	elseif ( strcmp(device_name, 'AWG') && (~isfield(Devices, 'AWG')) )
-        AWG = tcpip(parameters.AWG.ip_name, parameters.AWG.ip_port);
-        fopen(AWG);
-        Devices.AWG = AWG;
-        fprintf('AWG: Initialization finished\n');
-	elseif ( strcmp(device_name, 'MIR') && (~isfield(Devices, 'MIR')) )
-        MIR = serial('com10');
-        % MIR.Terminator = 'CR';
-        MIR.BaudRate = 2000000;
-        MIR.StopBits = 2;
-        fopen(MIR);
-        Devices.MIR = MIR;
-        % MIR_output(0, 0);
-        % MIR_output(-300, 340);
-        fprintf('MIR: Initialization finished\n');
-    elseif ( strcmp(device_name, 'APT') && (~isfield(Devices, 'APT')) )
-        Devices.APT.motor1 = 
-    end  
 end
 
 function scan_mirror(X, Y, Z_rel, CountNum, Z0)
@@ -69,28 +14,34 @@ function scan_mirror(X, Y, Z_rel, CountNum, Z0)
     %   github:   zhangchuheng123
     % Date:     
     %   Establish:          Jan. 18, 2017
+    %   Modify:             Feb. 11, 2017
 
-    global Devices parameters;
+    global parameters;
 
     if (nargin == 4)
         Z0 = 0;
     end
 
     % Check for initialization
-    if ( (isempty(Devices)) || (~isfield(Devices, 'Detector')) )
-        Initializer('Detector');       
+    detector = Detector();
+    if detector.is_init() == false
+        detector.init();
     end
-    if ( (isempty(Devices)) || (~isfield(Devices, 'Piezo')) )
-        Initializer('Piezo');       
+
+    piezo = Piezo();
+    if piezo.is_init() == false
+        piezo.init();
     end
-    if ( (isempty(Devices)) || (~isfield(Devices, 'MIR')) )
-        Initializer('MIR');      
+
+    mirror = Mirror();
+    if mirror.is_init() == false
+        mirror.init()
     end
 
     scan_pause_time_long = parameters.scan.scan_pause_time_long;
 
-    MIR_output(X(1), Y(1)), pause(0.2);
-    Detector_read();
+    mirror.output(X(1), Y(1)), pause(0.2);
+    detector.read();
     if (CountNum == 0)
         return;
     end
@@ -110,7 +61,7 @@ function scan_mirror(X, Y, Z_rel, CountNum, Z0)
     tic;
     
     for ind3 = 1:numel(Z_rel)
-        Piezo_MVR(0, 0, Z_rel(ind3)), pause(scan_pause_time_long);
+        piezo.MVR(0, 0, Z_rel(ind3)), pause(scan_pause_time_long);
         for ind2 = 1:numel(Y)
 
             if (mod(ind2, 2) == 1)
@@ -120,10 +71,10 @@ function scan_mirror(X, Y, Z_rel, CountNum, Z0)
             end
 
             for ind1 = ind1_list
-                MIR_output(X(ind1), Y(ind2));
+                mirror.output(X(ind1), Y(ind2));
 
                 % read data
-                ancilla = Detector_read(CountNum);
+                ancilla = detector.read(CountNum);
                 data(ind1, ind2, ind3) = ancilla;
 
                 % update processing bar
@@ -162,30 +113,36 @@ function scan(X, Y, Z, CountNum, Z0)
 	%   Modify:             Nov. 10, 2016       save to different folder 
 	%   Establish v2.0      Nov. 17, 2016       use it as a function
 	% 	Establish v3.0		Dec. 03, 2016 		as a function of the toolbox
+    %   Modify:             Feb. 11, 2017       use hardware package
 	% Description:
 	%   This is a all-in-one package for scanning fluorescent shining in diamond.
 	%   Initialization of hardware devices - piezo and detector - is included.
 
-    global Devices parameters;
+    global parameters;
+
+    detector = Detector();
+    piezo = Piezo();
 
     % Check for initialization
-	if ( (isempty(Devices)) || (~isfield(Devices, 'Piezo')) || (~isfield(Devices, 'Detector')) )
-		Initializer('Piezo');
-		Initializer('Detector');		
-	end
+	if detector.is_init() == false
+        detector.init();       
+    end
+    if piezo.is_init() == false
+        piezo.init();       
+    end
 
     scan_pause_time = parameters.scan.scan_pause_time;
     scan_pause_time_long = parameters.scan.scan_pause_time_long;
 
-    Piezo_MOV(X(1), Y(1), Z(1)), pause(1);
-    Detector_read();
+    piezo.MOV(X(1), Y(1), Z(1)), pause(1);
+    detector.read();
 
     data = zeros(numel(X), numel(Y), numel(Z));
     total_count = numel(X) * numel(Y) * numel(Z);
     count = 0;
     
     if (total_count == 1)
-    	Piezo_MOV(X(1), Y(1), Z(1));
+    	piezo.MOV(X(1), Y(1), Z(1));
         fprintf('Move piezo to position ... done\n');
         return;
     end
@@ -198,18 +155,18 @@ function scan(X, Y, Z, CountNum, Z0)
     for ind3 = 1:numel(Z)
         for ind2 = 1:numel(Y)
 
-        	Piezo_MOV(X(1), Y(ind2), Z(ind3));
+        	piezo.MOV(X(1), Y(ind2), Z(ind3));
             pause(scan_pause_time_long);
 
             for ind1 = 1:numel(X)
                 % move piezo to new position
                 if (ind1 ~= 1)
                     step_x = X(2) - X(1);
-                    Piezo_MVR(step_x, 0, 0);
+                    piezo.MVR(step_x, 0, 0);
                     pause(scan_pause_time);
                 end 
                 % read data
-                ancilla = Detector_read(CountNum);
+                ancilla = detector.read(CountNum);
                 data(ind1, ind2, ind3) = ancilla;
 
                 % update processing bar
@@ -331,16 +288,23 @@ function auto_save(fig_hdl, X, Y, Z, data, identifier, folder_name)
 end
 
 function ESR(freq, pow, loop)
-    global Devices parameters;
-    if ( (isempty(Devices)) || (~isfield(Devices, 'Piezo')) || (~isfield(Devices, 'Detector')) )
-		Initializer('Piezo');
-		Initializer('Detector');		
+    piezo = Piezo();
+    if piezo.is_init() == false
+        piezo.init()
     end
-	if ( (isempty(Devices)) || (~isfield(Devices, 'MW')) )
-		Initializer('MW');	
-	end
-    MW_power(pow);
-    MW_turnon;
+
+    detector = Detector();
+    if detector.is_init() == false
+        detector.init()
+    end
+
+    mw = MW();
+    if mw.is_init() == false
+        mw.init()
+    end
+
+    mw.power(pow);
+    mw.turnon;
     ESR_data = zeros(1,numel(freq));
     
     hwait=waitbar(0, 'Please wait...', 'Name', 'ESR...');
@@ -351,8 +315,8 @@ function ESR(freq, pow, loop)
     
     for n = 1:loop(1)
         for k = 1:numel(freq)
-            MW_frequency(freq(k)), pause(0.03);
-            ESR_data(k) = ESR_data(k) + Detector_read(loop(2), 100);
+            mw.frequency(freq(k)), pause(0.03);
+            ESR_data(k) = ESR_data(k) + detector.read(loop(2), 100);
             
             if (parameters.esr.calibration_in_esr == 1)
                 if (mod(count, parameters.esr.calibration_interval) == 0)
@@ -375,7 +339,7 @@ function ESR(freq, pow, loop)
         X = freq;
         auto_save(fig_hdl, X, 1, 1, ESR_data, parameters.figure.identifier, '-ESR');
     end
-    MW_turnoff;
+    mw.turnoff;
 end
 
 function fig_hdl = ESR_plot(freq, pow, data)
@@ -387,20 +351,24 @@ function fig_hdl = ESR_plot(freq, pow, data)
 end
 
 function calibration(count, position)
-    global Devices parameters;
+    global parameters;
+
+    piezo = Piezo();
+    if piezo.is_init() == false
+        piezo.init()
+    end
+
+    detector = Detector();
+    if detector.is_init == false
+        detector.init()
+    end
 
     if (nargin == 2)
-       Piezo_MOV(position(1), position(2), position(3));
+       piezo.MOV(position(1), position(2), position(3));
     end
     
     stepsize = parameters.calibration.step_size;
     half_decay_iter_number = parameters.calibration.half_decay_iter_number;
-
-    % Check for initialization
-    if ( (isempty(Devices)) || (~isfield(Devices, 'Piezo')) || (~isfield(Devices, 'Detector')) )
-        Initializer('Piezo');
-        Initializer('Detector');        
-    end
     
     iter_number = 0;
 
@@ -417,6 +385,16 @@ end
 
 function calibration_once(current_stepsize)
     global parameters;
+
+    piezo = Piezo();
+    if piezo.is_init() == false
+        piezo.init()
+    end
+
+    detector = Detector();
+    if detector.is_init() == false
+        detector.init()
+    end
     
     pause_time = parameters.calibration.pause_time;
     data = zeros(3,3,3);
@@ -426,11 +404,11 @@ function calibration_once(current_stepsize)
     fprintf('Calibration center counts = %.2f k\n', data(2,2,2));
     % get the other six points
     for direction = 1:3
-        Piezo_MVR_1D(direction, current_stepsize), pause(pause_time);
-        data(2 + (direction == 1),2 + (direction == 2),2 + (direction == 3)) = Detector_read(1, 100);
-        Piezo_MVR_1D(direction, - 2*current_stepsize), pause(pause_time);
-        data(2 - (direction == 1),2 - (direction == 2),2 - (direction == 3)) = Detector_read(1, 100);
-        Piezo_MVR_1D(direction, current_stepsize), pause(pause_time);
+        piezo.MVR_1D(direction, current_stepsize), pause(pause_time);
+        data(2 + (direction == 1),2 + (direction == 2),2 + (direction == 3)) = detector.read(1, 100);
+        piezo.MVR_1D(direction, - 2*current_stepsize), pause(pause_time);
+        data(2 - (direction == 1),2 - (direction == 2),2 - (direction == 3)) = detector.read(1, 100);
+        piezo.MVR_1D(direction, current_stepsize), pause(pause_time);
     end
     % find which point gets the maximum counts, and move to that point
     index = find(data == max(data(:)), 1, 'first');
@@ -439,9 +417,11 @@ function calibration_once(current_stepsize)
     direction = find(ind ~= 2, 1, 'first'); 
     if (~ isempty(direction))
         pm_sign = ind(direction) - 2;
-        Piezo_MVR_1D(direction, pm_sign .* current_stepsize), pause(pause_time);
+        piezo.MVR_1D(direction, pm_sign .* current_stepsize), pause(pause_time);
     end
 end
+
+%%%%%%%%%%%%%%%%  UNFINISHED %%%%%%%%%%%%%%
 
 function result = LaserDelay_IQ_main(delay_time, IQ_phase, ...
     MWFreq, MWPower, AWGVpp1, AWGVpp2, AWGVpp3, loop_repeat, Count)
@@ -608,236 +588,4 @@ function A = wave_generator(Waveform, Length)
             A = [A, C];
         end
     end
-end
-
-function MW_power(pow)
-    global Devices;
-    s = [':POW ', num2str(pow), 'DBM'];
-    fprintf(Devices.MW,'%s\n',s);
-    pause(0.1);
-end
-
-function MW_turnon
-    global Devices;
-    fprintf(Devices.MW,'%s\n',':OUTP ON');
-    pause(0.1);
-end
-
-function MW_channel(channel)
-    global Devices;
-    fprintf(Devices.MW,'%s %s\n', ':OUTP', num2str(channel));
-    pause(0.1);
-end
-
-function MW_turnoff
-    global Devices;
-    fprintf(Devices.MW,'%s\n',':OUTP OFF');
-    pause(0.1);
-end
-
-function MW_frequency(freq, amount)
-    global Devices;
-    if (nargin == 1)
-        amount = 'G';
-    end
-    s = [':FREQ ', num2str(freq), amount, 'Hz'];
-    fprintf(Devices.MW,'%s\n',s);
-end
-
-function MIR_output(X, Y)
-    %% move mir to the position (x,y)
-    global Devices;
-
-    byte_length = 2^8;
-
-    ctrl_B = 1*(2^12);  
-    ctrl_A = 8*(2^12);
-
-    volt_A = 2440 + Y; % y
-    volt_B = 1650 + X; % x
-
-    cmd_A = ctrl_A + volt_A;         
-    cmd_A = floor(cmd_A/byte_length) + byte_length * mod(cmd_A, byte_length);
-
-    cmd_B = ctrl_B + volt_B;            
-    cmd_B = floor(cmd_B/2^8) + 2^8*mod(cmd_B,2^8);
-
-    fwrite(Devices.MIR, cmd_B, 'uint16');
-    fwrite(Devices.MIR, cmd_A, 'uint16');        
-end
-
-
-function Piezo_MOV(X, Y, Z)
-    global Devices;
-    s = ['MOV 1 ',num2str(X),' 2 ',num2str(Y),' 3 ',num2str(Z)];
-    fprintf(Devices.Piezo,'%s\n', s);
-end
-
-function Piezo_MVR(X, Y, Z)
-    global Devices;
-    s = 'MVR ';
-    if (X ~= 0)
-        s = [s, '1 ', num2str(X)];
-    end
-    if (Y ~= 0)
-        s = [s, '2 ', num2str(Y)];
-    end
-    if (Z ~= 0)
-        s = [s, '3 ', num2str(Z)];
-    end
-    if ~strcmp(s, 'MVR ')
-        fprintf(Devices.Piezo,'%s\n', s);
-    end
-end
-
-function Piezo_MVR_1D(direction, stepsize)
-    global Devices;
-    s = ['MVR ', num2str(direction) ,' ', num2str(stepsize)];
-    fprintf(Devices.Piezo, '%s\n', s);
-end
-
-function count = Detector_read(round_num, time_ms)
-    global Devices;
-    if (nargin == 0)
-        round_num = 1;
-        time_ms = 10;
-    elseif (nargin == 1)
-        time_ms = 10;
-    end
-    if (time_ms == 10)
-        bit_num = 2;
-        ratio = 0.1;
-    elseif (time_ms == 100)
-        bit_num = 4;
-        ratio = 0.01;
-    end
-    count = 0;
-    for num = 1:round_num
-        fprintf(Devices.Detector,'%d', [bit_num]);
-        data_reader = fread(Devices.Detector, 6);
-        fprintf(Devices.Detector,'%d', [0]);
-        count = count + data_reader(4)*65536 + data_reader(5)*256 + data_reader(6);
-    end
-    count = count .* ratio ./ round_num;
-end
-
-function AWG_set_freq_MHz(channel, freq_MHz)
-    global Devices;
-    s = ['SOURCE',num2str(channel),':FREQUENCY ',num2str(freq_MHz), 'MHZ'];
-    fprintf(Devices.AWG, '%s\n', s);
-end
-
-function AWG_set_amp_voltage(channel, Vpp)
-    global Devices;
-    s = ['SOURCE',num2str(channel),':VOLTAGE:AMPLITUDE ',num2str(Vpp), 'MHZ'];
-    fprintf(Devices.AWG, '%s\n', s);
-end
-
-function AWG_waveform_delete_all
-    global Devices;
-    fprintf(Devices.AWG, '%s\n', 'WLIST:WAVEFORM:DELETE ALL');
-end
-
-function AWG_string(str)
-    global Devices;
-    fprintf(Devices.AWG, '%s\n', str);
-end
-
-function AWG_run
-    ancilla_2lowerbound = 0;
-    ancilla_2upperbound = 1.05;
-    inconsistencytol = 30; %%check the maximal inconsistency tolorence relative to sqrt(), default value 3-4;
-    loop_standard = parameters.laser_delay.loop_standard;
-    
-    AWGloop = parameters.AWG.loop_time;
-
-    AWG_string('AWGControl:RMODE SEQUENCE');
-
-    s = ['SEQUENCE:LENGTH ', num2str(loop_standard)];
-    fprintf(AWG, '%s\n', s);
-    for i = 1:loop_standard
-        s1 = ['SEQUENCE:ELEMENT', num2str(i), ':WAVEFORM1', ' "AWG_wave_ch1"'];
-        fprintf(AWG, '%s\n', s1);
-        s2 = ['SEQUENCE:ELEMENT', num2str(i), ':WAVEFORM2', ' "AWG_wave_ch2"'];
-        fprintf(AWG, '%s\n', s2);
-        s4 = ['SEQUENCE:ELEMENT', num2str(i), ':LOOP:COUNT ', num2str(AWGloop)];
-        fprintf(AWG, '%s\n', s4);
-    end
-    fprintf(AWG, '%s\n', 'OUTPUT1:STATE ON');
-    fprintf(AWG, '%s\n', 'OUTPUT2:STATE ON');
-
-    fprintf(['Threshold_fix:',num2str(Threshold_fix)]);
-    Cali_back;
-
-    while (count_loop < count_repeat)
-        count_loop = count_loop + 1;
-        ContCaliNum = 0;
-        
-        disp(['   now is measurement', num2str(j), ' count_loop', num2str(count_loop)]);
-        disp(['   now the total calibration is ', num2str(CalibrationTotal)]);
-        if ( (j > 1) || (count_loop > 1))
-            Cali_back;
-        end
-        
-        fprintf(AWG, '%s\n', 'AWGCONTROL:RUN');
-        pause(pausetime);
-        fprintf(Detector, '%d', [1]);
-        Data_temp = fread(Detector, 6);
-        ancilla_1(count_loop) = Data_temp(1)*65536 + Data_temp(2)*256 + Data_temp(3);
-        ancilla_2(count_loop) = Data_temp(4)*65536 + Data_temp(5)*256 + Data_temp(6);
-        fprintf(Detector, '%d', [0]);
-        if ( ancilla_2(count_loop) == 0 )
-            % j = j - 1;
-            Detect_bug = 1;
-            fprintf('Detect_bug in AWG_run!\n');
-            break;
-        else
-            Threshold = loop_standard*Detect_duration*10^-9*Count*AWGloop;
-            if ( (j == 1) && (count_loop == 1))
-                if ( ( ancilla_2(count_loop) > (ancilla_2lowerbound*loop_standard*Detect_duration*10^-9*Count*AWGloop)) && ( ancilla_2(count_loop) < (ancilla_2upperbound*loop_standard*Detect_duration*10^-9*Count*AWGloop)))
-                    Threshold = loop_standard*Detect_duration*10^-9*Count*AWGloop;
-                else
-                    if ( ancilla_2(count_loop) < (ancilla_2lowerbound*loop_standard*Detect_duration*10^-9*Count*AWGloop))
-                        disp('ancilla_2 lowerbound reached while start the loop' )
-                    else
-                        disp('ancilla_2 upperbound reached while start the loop' )
-                    end
-                    disp(['   now is calibration']);
-                    Cali_back;
-                    count_loop = count_loop - 1;
-                end
-                
-            else if ((ancilla_2(count_loop) < ancilla_2lowerbound*Threshold) || (ancilla_2(count_loop) > ancilla_2upperbound*Threshold) || (ancilla_1(count_loop) < 0.5*Threshold) || (ancilla_1(count_loop) > 1.3*Threshold))
-                    
-                    if (ancilla_2(count_loop) < ancilla_2lowerbound*Threshold)
-                        disp('ancilla_2 lowerbound reached while in the loop')
-                        fprintf([num2str(ancilla_2(count_loop)),'<',num2str(ancilla_2lowerbound*Threshold)]);
-                    end
-                    if (ancilla_2(count_loop) > ancilla_2upperbound*Threshold)
-                        disp('ancilla_2 upperbound reached while in the loop')
-                    end
-                    disp(['   now is calibration']);
-                    count_loop = count_loop-1;
-                    CalibrationTotal = CalibrationTotal + 1;
-                    Cali_back;
-                end
-            end
-        end
-    end
-    %% check the data consistency
-    if ( (max(abs(ancilla_2-mean(ancilla_2))) > inconsistencytol*mean(sqrt(ancilla_2)) ...
-            ||  max(abs(ancilla_1-mean(ancilla_1))) > inconsistencytol*mean(sqrt(ancilla_1)) )...
-            && Detect_bug~=1 )
-        %j = j - 1;
-        Detect_bug = 1;
-        fprintf('data inconsistent!  %d\n',Cnt_det_bug+1);
-        if max(abs(ancilla_2-mean(ancilla_2))) > inconsistencytol*mean(sqrt(ancilla_2))
-            fprintf(['ancilla_2',num2str(ancilla_2)]);
-        else
-            fprintf(['ancilla_1',num2str(ancilla_1)]);
-        end
-    end
-    %%
-    ancilla_1_total = sum(ancilla_1);
-    ancilla_2_total = sum(ancilla_2);
 end
