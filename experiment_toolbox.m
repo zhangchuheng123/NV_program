@@ -57,6 +57,8 @@ function Initializer(device_name)
         % MIR_output(0, 0);
         % MIR_output(-300, 340);
         fprintf('MIR: Initialization finished\n');
+    elseif ( strcmp(device_name, 'APT') && (~isfield(Devices, 'APT')) )
+        Devices.APT.motor1 = 
     end  
 end
 
