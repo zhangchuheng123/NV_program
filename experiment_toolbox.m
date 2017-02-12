@@ -36,7 +36,6 @@ function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
     if apt.is_init() == false
         apt.init()
     end
-    apt_origin_position = apt.POS();
     
     detector = Detector();
     if detector.is_init() == false
@@ -53,24 +52,30 @@ function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
         mirror.init()
     end
 
-    data = zeros(numel(XX), numel(YY), numel(X), numel(Y), numel(Z_rel));
-    total_count = numel(XX) * numel(YY);
+    data = zeros(numel(X), numel(Y), numel(Z_rel));
+    total_count = numel(XX) * numel(YY) * numel(X) * numel(Y) * numel(Z_rel);
     count = 0;
 
     if (total_count == 1)
         mirror.output(X, Y);
         fprintf('Move Mirror to position ... done\n');
-        fprintf('Current APT position is (%.3f, %.3f)', apt_origin_position(1), apt_origin_position(2));
+        return;
     end
+
+    scan_pause_time_long = parameters.scan.scan_pause_time_long;
 
     hwait=waitbar(0, 'Please wait...', 'Name', 'Large Scanning...');
     c = onCleanup(@()close(hwait));
 
     tic;
     
+    current_APT_pos = [0, 0];
     for indx = 1:numel(XX)
         for indy = 1:numel(YY)
-            apt.MOV(apt_origin_position(1) + XX(indx), apt_origin_position(2) + YY(indy));
+            target_APT_pos = [XX(indx), YY(indy)];
+            relative_APT_pos = target_APT_pos - current_APT_pos;
+            current_APT_pos = target_APT_pos;
+            apt.MVR(relative_APT_pos(1), relative_APT_pos(2));
             for ind3 = 1:numel(Z_rel)
                 piezo.MVR(0, 0, Z_rel(ind3)), pause(scan_pause_time_long);
                 for ind2 = 1:numel(Y)
@@ -100,13 +105,15 @@ function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
                 end
             end
             fig_hdl = scan_plot(X, Y, Z_rel+Z0, data, Z0);
-            str = ['-LargeScan', num2str(XX(indx)), '-', num2str(YY(indy))];
+            str = ['(', num2str(XX(indx)), ',', num2str(YY(indy)), ')_'];
             set(fig_hdl, 'Name', str);
             if (parameters.figure.is_save == 1)
-                auto_save(fig_hdl, X, Y, Z_rel+Z0, data, parameters.figure.identifier, str);
+                auto_save(fig_hdl, X, Y, Z_rel+Z0, data, [parameters.figure.identifier, str], '-LargeScan');
             end
         end
     end
+
+    apt.HOME();
 end
 
 function scan_mirror(X, Y, Z_rel, CountNum, Z0)

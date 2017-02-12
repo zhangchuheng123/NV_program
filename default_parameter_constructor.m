@@ -1,4 +1,12 @@
-function parameters = default_parameter_constructor(stage_name)
+function parameters = default_parameter_constructor(stage_name, debug_mode)
+    if (nargin == 1) 
+        debug_mode = false;
+    end
+    if debug_mode
+        close all;
+        clc;
+        dbstop if error;
+    end
 	parameters.stage = stage_name;
 	if (strcmp(parameters.stage, 'lab5-lian'))
 		parameters.Piezo.ip_name = '192.168.54.3';
