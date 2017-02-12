@@ -5,6 +5,107 @@ function tools = experiment_toolbox
     tools.scan_mirror = @scan_mirror;
     tools.ESR = @ESR;
     tools.calibration = @calibration;
+    tools.large_scan = @large_scan;
+end
+
+function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
+    %   author:   Zhang Chuheng 
+    %   email:    zhangchuheng123 (AT) gmail.com
+    %   home:     zhangchuheng123.github.io
+    %   github:   zhangchuheng123
+    %
+    %   scan using APT motor and mirror
+    %   X, Y        mirror voltage
+    %   XX, YY      APT scale
+    %
+    % Date:     
+    %   Establish:          Feb. 12, 2017
+
+    global parameters;
+
+    if (nargin == 5)
+        CountNum = 1;
+        Z0 = 0;
+    end
+    if (nargin == 6)
+        Z0 = 0;
+    end
+
+    % Check for initialization
+    detector = Detector();
+    if detector.is_init() == false
+        detector.init();
+    end
+
+    piezo = Piezo();
+    if piezo.is_init() == false
+        piezo.init();
+    end
+
+    mirror = Mirror();
+    if mirror.is_init() == false
+        mirror.init()
+    end
+
+    apt = APT();
+    if apt.is_init() == false
+        apt.init()
+    end
+
+    data = zeros(numel(XX), numel(YY), numel(X), numel(Y), numel(Z_rel));
+    total_count = numel(XX) * numel(YY);
+    count = 0;
+
+    if (total_count == 1)
+        apt.MOV(XX, YY);
+        mirror.output(X, Y);
+        fprintf('Move Mirror and APT to position ... done');
+    end
+
+    hwait=waitbar(0, 'Please wait...', 'Name', 'Large Scanning...');
+    c = onCleanup(@()close(hwait));
+
+    tic;
+    
+    for indx = 1:numel(XX)
+        for indy = 1:numel(YY)
+            apt.MOV(XX(indx), YY(indy));
+            for ind3 = 1:numel(Z_rel)
+                piezo.MVR(0, 0, Z_rel(ind3)), pause(scan_pause_time_long);
+                for ind2 = 1:numel(Y)
+
+                    if (mod(ind2, 2) == 1)
+                        ind1_list = 1:numel(X);
+                    else
+                        ind1_list = numel(X):-1:1;
+                    end
+
+                    for ind1 = ind1_list
+                        mirror.output(X(ind1), Y(ind2));
+
+                        % read data
+                        ancilla = detector.read(CountNum);
+                        data(ind1, ind2, ind3) = ancilla;
+
+                        % update processing bar
+                        count = count + 1;
+                        ratio = count ./ total_count;
+                        t = toc;
+                        remaining_time = fix(t ./ ratio .* (1 - ratio));
+                        str = sprintf('count at (%.1f, %.1f) = %.1f Now processing %.1f %% \n Time remaining %d s', ...
+                            X(ind1), Y(ind2), ancilla, fix(ratio .* 1000)/10, remaining_time);
+                        waitbar(ratio, hwait, str);
+                    end
+                end
+            end
+            fig_hdl = scan_plot(X, Y, Z_rel+Z0, data, Z0);
+            str = ['-LargeScan', num2str(XX(indx)), '-', num2str(YY(indy))];
+            set(fig_hdl, 'Name', str);
+            if (parameters.figure.is_save == 1)
+                auto_save(fig_hdl, X, Y, Z_rel+Z0, data, parameters.figure.identifier, str);
+            end
+        end
+    end
 end
 
 function scan_mirror(X, Y, Z_rel, CountNum, Z0)
@@ -61,7 +162,7 @@ function scan_mirror(X, Y, Z_rel, CountNum, Z0)
     tic;
     
     for ind3 = 1:numel(Z_rel)
-        piezo.MVR(0, 0, Z_rel(ind3)), pause(scan_pause_time_long);
+        piezo.MOV(0, 0, Z0+Z_rel(ind3)), pause(scan_pause_time_long);
         for ind2 = 1:numel(Y)
 
             if (mod(ind2, 2) == 1)

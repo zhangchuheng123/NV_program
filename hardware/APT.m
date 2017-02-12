@@ -1,6 +1,7 @@
 function apt = APT
 	apt.init = @init;
 	apt.is_init = @is_init;
+    apt.MOV = @MOV;
 end
 
 function init
@@ -34,11 +35,17 @@ function APT_initial(handle, SN)
     handle.Identify;
     handle.EnableHWChannel(0);
     % channel number = 0 
-    % wait until it is finished
+    % true: wait until it is finished
     handle.MoveHome(0, true);
 end
 
-function MOV(handle, dis)
+function MOV(x, y)
+    global Devices
+    move_abs(Devices.APT.motor1, x);
+    move_abs(Devices.APT.motor2, y);
+end
+
+function move_abs(handle, dis)
     handle.SetAbsMovePos(0, dis);
     handle.MoveAbsolute(0, true);
 end
