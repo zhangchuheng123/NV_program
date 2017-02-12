@@ -390,7 +390,7 @@ function auto_save(fig_hdl, X, Y, Z, data, identifier, folder_name)
 
     str = datestr(now,'yyyymmddHHMMss');
     print(fig_hdl, fullfile(figure_dir, [identifier, str]), '-djpeg','-r0');
-    saveas(fig_hdl, fullfile(figure_dir, [identifier, str]), 'fig');
+    saveas(fig_hdl, fullfile(figure_dir, [identifier, str, '.fig']), 'fig');
 
     str_mat = [identifier, str, '.mat'];
     save(fullfile(data_dir, str_mat), 'data', 'XYZ');

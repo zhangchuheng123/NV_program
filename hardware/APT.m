@@ -26,7 +26,7 @@ function init
         if parameters.APT.is_coord_when_init
             HOME();
         end
-    end
+	end
 end
 
 function re = is_init

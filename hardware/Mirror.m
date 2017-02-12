@@ -5,7 +5,7 @@ function mir = Mirror
 end
 
 function init
-	global Devices parameters;
+	global Devices;
 	if (isempty(Devices))
 		delete(instrfindall);
 	end
@@ -16,10 +16,8 @@ function init
         MIR.StopBits = 2;
         fopen(MIR);
         Devices.MIR = MIR;
-        % MIR_output(0, 0);
-        % MIR_output(-300, 340);
         fprintf('MIR: Initialization finished\n');
-    end
+	end
 end
 
 function re = is_init

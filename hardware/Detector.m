@@ -14,13 +14,13 @@ function init
 	    Detector.Terminator = 'CR';
 	    Detector.BaudRate = 2000000;
 	    fopen(Detector);
-	    fprintf(Detector, '%d', [0]);
-	    fprintf(Detector, '%d', [1]);
+	    fprintf(Detector, '%d', 0);
+	    fprintf(Detector, '%d', 1);
 	    fread(Detector,6);
-	    fprintf(Detector, '%d', [0]);
+	    fprintf(Detector, '%d', 0);
 	    Devices.Detector = Detector;
         fprintf('Detector: Initialization finished\n');
-    end
+	end
 end
 
 function re = is_init
@@ -45,9 +45,9 @@ function count = read(round_num, time_ms)
     end
     count = 0;
     for num = 1:round_num
-        fprintf(Devices.Detector,'%d', [bit_num]);
+        fprintf(Devices.Detector,'%d', bit_num);
         data_reader = fread(Devices.Detector, 6);
-        fprintf(Devices.Detector,'%d', [0]);
+        fprintf(Devices.Detector,'%d', 0);
         count = count + data_reader(4)*65536 + data_reader(5)*256 + data_reader(6);
     end
     count = count .* ratio ./ round_num;
