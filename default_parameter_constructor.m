@@ -16,9 +16,13 @@ function parameters = default_parameter_constructor(stage_name)
 		parameters.AWG.ip_port = 4005;
 		parameters.MW.ip_name = '192.168.13.5';
 		parameters.MW.ip_port = 5025;
-		parameters.APT.SN1 = 83850683;
-		parameters.APT.SN2 = 83836232;
-		parameters.APT.is_show = false;
+		parameters.APT.SNx = 83836232; 	
+		parameters.APT.SNy = 83850683;	
+		parameters.APT.is_show = true;
+		parameters.APT.is_home_when_init = false;
+		parameters.APT.is_coord_when_init = false;
+		parameters.APT.coord_init.x = 3.4002;
+		parameters.APT.coord_init.y = 7.4967;
 	end
 		
 

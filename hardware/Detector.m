@@ -9,7 +9,7 @@ function init
 	if (isempty(Devices))
 		delete(instrfindall);
 	end
-	if ( strcmp(device_name, 'Detector') && (~isfield(Devices, 'Detector')) )
+	if (~isfield(Devices, 'Detector'))
 		Detector = serial(parameters.Detector.com_name);
 	    Detector.Terminator = 'CR';
 	    Detector.BaudRate = 2000000;

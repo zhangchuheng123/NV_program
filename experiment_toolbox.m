@@ -32,6 +32,12 @@ function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
     end
 
     % Check for initialization
+    apt = APT();
+    if apt.is_init() == false
+        apt.init()
+    end
+    apt_origin_position = apt.POS();
+    
     detector = Detector();
     if detector.is_init() == false
         detector.init();
@@ -47,19 +53,14 @@ function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
         mirror.init()
     end
 
-    apt = APT();
-    if apt.is_init() == false
-        apt.init()
-    end
-
     data = zeros(numel(XX), numel(YY), numel(X), numel(Y), numel(Z_rel));
     total_count = numel(XX) * numel(YY);
     count = 0;
 
     if (total_count == 1)
-        apt.MOV(XX, YY);
         mirror.output(X, Y);
-        fprintf('Move Mirror and APT to position ... done');
+        fprintf('Move Mirror to position ... done\n');
+        fprintf('Current APT position is (%.3f, %.3f)', apt_origin_position(1), apt_origin_position(2));
     end
 
     hwait=waitbar(0, 'Please wait...', 'Name', 'Large Scanning...');
@@ -69,7 +70,7 @@ function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
     
     for indx = 1:numel(XX)
         for indy = 1:numel(YY)
-            apt.MOV(XX(indx), YY(indy));
+            apt.MOV(apt_origin_position(1) + XX(indx), apt_origin_position(2) + YY(indy));
             for ind3 = 1:numel(Z_rel)
                 piezo.MVR(0, 0, Z_rel(ind3)), pause(scan_pause_time_long);
                 for ind2 = 1:numel(Y)
