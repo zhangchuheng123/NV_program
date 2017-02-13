@@ -1,7 +1,7 @@
 %% move it to a position
 global parameters;
 parameters = default_parameter_constructor('lab1-jiang');
-parameters.figure.identifier =  'Scan_natural-3_';
+parameters.figure.identifier =  'NV_mid_';
 tools = experiment_toolbox;
 tools.scan(10, 10, 20, 1, 0);
 
@@ -33,10 +33,10 @@ CountNum = 1;
 tools.scan(X, Y, Z, CountNum, Z0);
 
 %% Center scan for NV
-X0 = 9.5-9.0+62.0;
-Y0 = 9.0-9.0+23.7;
-Z = 7.7;
-Delta = 3;
+X0 = 65.5;
+Y0 = 70;
+Z = 10;
+Delta = 1;
 X = X0-Delta:0.1:X0+Delta;
 Y = Y0-Delta:0.1:Y0+Delta;
 Z = Z + Z0;
@@ -44,9 +44,9 @@ CountNum = 1;
 tools.scan(X, Y, Z, CountNum, Z0);
 
 %% scanz over NV
-NV_x = 62.1;
-NV_y = 24.7;
-Z = Z0-5:0.1:Z0+10;
+NV_x = 65.4;
+NV_y = 70.2;
+Z = 24:0.1:28;
 CountNum = 40;
 tools.scan(NV_x, NV_y, Z, CountNum, 0);
 

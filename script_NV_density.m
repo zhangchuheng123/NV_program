@@ -16,16 +16,16 @@ tools.scan(X, Y, Z, CountNum, 0);
 Z0 = 17;
 X_vol = -100:2:100;
 Y_vol = -100:2:100;
-Z = [1];
+Z = 10;
 CountNum = 1;
 tools.scan(50, 50, Z0, 0);
 tools.scan_mirror(X_vol, Y_vol, Z, CountNum, Z0);
 
 %% density scan
-Z0 = 15.5;
+Z0 = 16;
 X = 30:0.5:70;
 Y = 30:0.5:70;
-Z = [2,5,10,20];
+Z = 10;
 Z = Z + Z0;
 CountNum = 1;
 tools.scan_mirror(0, 0, Z, 0, Z0);

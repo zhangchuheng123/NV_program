@@ -8,7 +8,7 @@ function tools = experiment_toolbox
     tools.large_scan = @large_scan;
 end
 
-function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
+function large_scan(X, Y, XX, YY, Z, CountNum, Z0)
     %   author:   Zhang Chuheng 
     %   email:    zhangchuheng123 (AT) gmail.com
     %   home:     zhangchuheng123.github.io
@@ -52,8 +52,8 @@ function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
         mirror.init()
     end
 
-    data = zeros(numel(X), numel(Y), numel(Z_rel));
-    total_count = numel(XX) * numel(YY) * numel(X) * numel(Y) * numel(Z_rel);
+    data = zeros(numel(X), numel(Y), numel(Z));
+    total_count = numel(XX) * numel(YY) * numel(X) * numel(Y) * numel(Z);
     count = 0;
 
     if (total_count == 1)
@@ -62,7 +62,7 @@ function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
         return;
     end
 
-    scan_pause_time_long = parameters.scan.scan_pause_time_long;
+    scan_pause_time_long = parameters.large_scan.scan_pause_time_long;
 
     hwait=waitbar(0, 'Please wait...', 'Name', 'Large Scanning...');
     c = onCleanup(@()close(hwait));
@@ -76,8 +76,8 @@ function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
             relative_APT_pos = target_APT_pos - current_APT_pos;
             current_APT_pos = target_APT_pos;
             apt.MVR(relative_APT_pos(1), relative_APT_pos(2));
-            for ind3 = 1:numel(Z_rel)
-                piezo.MVR(0, 0, Z_rel(ind3)), pause(scan_pause_time_long);
+            for ind3 = 1:numel(Z)
+                piezo.MVR(0, 0, Z(ind3)), pause(scan_pause_time_long);
                 for ind2 = 1:numel(Y)
 
                     if (mod(ind2, 2) == 1)
@@ -104,11 +104,11 @@ function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
                     end
                 end
             end
-            fig_hdl = scan_plot(X, Y, Z_rel+Z0, data, Z0);
+            fig_hdl = scan_plot(X, Y, Z, data, Z0);
             str = ['(', num2str(XX(indx)), ',', num2str(YY(indy)), ')_'];
             set(fig_hdl, 'Name', str);
             if (parameters.figure.is_save == 1)
-                auto_save(fig_hdl, X, Y, Z_rel+Z0, data, [parameters.figure.identifier, str], '-LargeScan');
+                auto_save(fig_hdl, X, Y, Z, data, [parameters.figure.identifier, str], '-LargeScan');
             end
         end
     end
@@ -116,7 +116,7 @@ function large_scan(X, Y, XX, YY, Z_rel, CountNum, Z0)
     apt.HOME();
 end
 
-function scan_mirror(X, Y, Z_rel, CountNum, Z0)
+function scan_mirror(X, Y, Z, CountNum, Z0)
     %   author:   Zhang Chuheng 
     %   email:    zhangchuheng123 (AT) gmail.com
     %   home:     zhangchuheng123.github.io
@@ -147,7 +147,8 @@ function scan_mirror(X, Y, Z_rel, CountNum, Z0)
         mirror.init()
     end
 
-    scan_pause_time_long = parameters.scan.scan_pause_time_long;
+    scan_pause_time_long = parameters.mirror_scan.scan_pause_time_long;
+    scan_pause_time = parameters.mirror_scan.scan_pause_time;
 
     mirror.output(X(1), Y(1)), pause(0.2);
     detector.read();
@@ -155,8 +156,8 @@ function scan_mirror(X, Y, Z_rel, CountNum, Z0)
         return;
     end
 
-    data = zeros(numel(X), numel(Y), numel(Z_rel));
-    total_count = numel(X) * numel(Y) * numel(Z_rel);
+    data = zeros(numel(X), numel(Y), numel(Z));
+    total_count = numel(X) * numel(Y) * numel(Z);
     count = 0;
     
     if (total_count == 1)
@@ -169,8 +170,8 @@ function scan_mirror(X, Y, Z_rel, CountNum, Z0)
 
     tic;
     
-    for ind3 = 1:numel(Z_rel)
-        piezo.MOV(0, 0, Z0+Z_rel(ind3)), pause(scan_pause_time_long);
+    for ind3 = 1:numel(Z)
+        piezo.MOV(0, 0, Z(ind3)), pause(scan_pause_time_long);
         for ind2 = 1:numel(Y)
 
             if (mod(ind2, 2) == 1)
@@ -181,6 +182,9 @@ function scan_mirror(X, Y, Z_rel, CountNum, Z0)
 
             for ind1 = ind1_list
                 mirror.output(X(ind1), Y(ind2));
+                if (scan_pause_time ~= 0)
+                    pause(scan_pause_time);
+                end
 
                 % read data
                 ancilla = detector.read(CountNum);
@@ -198,10 +202,10 @@ function scan_mirror(X, Y, Z_rel, CountNum, Z0)
         end
     end
 
-    fig_hdl = scan_plot(X, Y, Z_rel+Z0, data, Z0);
+    fig_hdl = scan_plot(X, Y, Z, data, Z0);
 
     if (parameters.figure.is_save == 1)
-        auto_save(fig_hdl, X, Y, Z_rel+Z0, data, parameters.figure.identifier, '-MirrorScan');
+        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-MirrorScan');
     end
 end
 
@@ -468,7 +472,7 @@ function calibration(count, position)
     end
 
     detector = Detector();
-    if detector.is_init == false
+    if detector.is_init() == false
         detector.init()
     end
 
@@ -508,7 +512,7 @@ function calibration_once(current_stepsize)
     pause_time = parameters.calibration.pause_time;
     data = zeros(3,3,3);
     % original point
-    data(2,2,2) = Detector_read(1, 100);
+    data(2,2,2) = detector.read(1, 100);
     % display current count
     fprintf('Calibration center counts = %.2f k\n', data(2,2,2));
     % get the other six points

@@ -39,6 +39,12 @@ function parameters = default_parameter_constructor(stage_name, debug_mode)
 	parameters.scan.scan_pause_time = 0.06;
 	% waiting time between two lines 
 	parameters.scan.scan_pause_time_long = 0.2;
+    
+    parameters.mirror_scan.scan_pause_time_long = 0.2;
+    parameters.mirror_scan.scan_pause_time = 0;
+
+    parameters.large_scan.scan_pause_time_long = 0.2;
+    parameters.large_scan.scan_pause_time = 0;
 
 	% file name prefix
 	parameters.figure.identifier = 'default_identifier_';
