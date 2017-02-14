@@ -2,6 +2,9 @@ function detector = Detector
 	detector.init = @init;
 	detector.is_init = @is_init;
 	detector.read = @read;
+    detector.click = @click;
+    detector.read_serial = @read_serial;
+    detector.flush = @flush;
 end
 
 function init
@@ -28,6 +31,56 @@ function re = is_init
 	re = (~isempty(Devices)) && (isfield(Devices, 'Detector'));
 end
 
+function click(round_num, time_ms)
+    global Devices;
+    if (nargin == 0)
+        round_num = 1;
+        time_ms = 10;
+    elseif (nargin == 1)
+        time_ms = 10;
+    end
+    if (time_ms == 10)
+        bit_num = 2;
+    elseif (time_ms == 100)
+        bit_num = 4;
+    end
+    count = 0;
+    for num = 1:round_num
+        fprintf(Devices.Detector,'%d', [bit_num, 0]);
+    end
+end
+
+function result = read_serial(point_num, round_num, time_ms)
+    global Devices;
+    if (nargin == 0)
+        point_num = 1;
+        round_num = 1;
+        time_ms = 10;
+    elseif (nargin == 1)
+        round_num = 1;
+        time_ms = 10;
+    elseif  (nargin == 2)
+        time_ms = 10;
+    end
+        
+    if (time_ms == 10)
+        ratio = 0.1;
+    elseif (time_ms == 100)
+        ratio = 0.01;
+    end
+
+    total_bytes = point_num .* round_num .* 6;
+    result = fread(Devices.Detector, total_bytes);
+    scale_vec = 256 .^ (2:-1:0).';
+    result = reshape(result, 3, []);
+    result = sum(bsxfun(@times, result, scale_vec)).';
+    result = reshape(result, 2, []);
+    result = result(2, :);
+    result = reshape(result, round_num, []);
+    result = mean(result, 1);
+    result = result .* ratio;
+end 
+
 function count = read(round_num, time_ms)
     global Devices;
     if (nargin == 0)
@@ -51,4 +104,11 @@ function count = read(round_num, time_ms)
         count = count + data_reader(4)*65536 + data_reader(5)*256 + data_reader(6);
     end
     count = count .* ratio ./ round_num;
+end
+
+function flush
+    global Devices;
+    if (Devices.Detector.BytesAvailable > 0)
+        fread(Devices.Detector, Devices.Detector.BytesAvailable);
+    end
 end

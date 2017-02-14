@@ -28,13 +28,13 @@ tools.large_scan(X_vol, Y_vol, APT_X, APT_Y, Z, CountNum, Z0);
 
 %% density scan
 Z0 = 17;
-X_vol = -400:2:400;
-Y_vol = -400:2:400;
+X_vol = 0:2:100;
+Y_vol = 0:2:100;
 Z_rel = 10;
 Z = Z0 + Z_rel;
 CountNum = 1;
 tools.scan(50, 50, Z0, 0);
-tools.scan_mirror(X_vol, Y_vol, Z, CountNum, Z0);
+tools.scan_mirror_fast(X_vol, Y_vol, Z, CountNum, Z0);
 
 %% density scan
 Z0 = 16.5;
