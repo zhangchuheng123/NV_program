@@ -37,10 +37,10 @@ tools.scan(50, 50, Z0, 0);
 tools.scan_mirror(X_vol, Y_vol, Z, CountNum, Z0);
 
 %% density scan
-Z0 = 17;
-X = 10:0.3:90;
-Y = 10:0.3:90;
-Z_rel = 10;
+Z0 = 16.5;
+X = 40:0.3:60;
+Y = 40:0.3:60;
+Z_rel = 30;
 Z = Z0 + Z_rel;
 CountNum = 1;
 tools.scan(X, Y, Z, CountNum, Z0);
@@ -58,13 +58,18 @@ tools.scan(50, 50, Z0, 0);
 tools.scan_mirror(X_vol, Y_vol, Z, CountNum, Z0);
 
 %% center scan
-X0 = 15.4;
-Y0 = 51.4;
+X0 = 54.2;
+Y0 = 46.9;
 Z0 = 16.5;
-delta = 2;
+delta = 1;
 X = X0-delta:0.1:X0+delta;
 Y = Y0-delta:0.1:Y0+delta;
-Z_rel = 10;
+Z_rel = 30;
 Z = Z0 + Z_rel;
-CountNum  = 1;
+CountNum  = 10;
 tools.scan(X, Y, Z, CountNum, Z0);
+
+%%
+Z = Z_rel+Z0-10:0.2:Z_rel+Z0+10;
+CountNum = 10;
+tools.scan(X0, Y0, Z, CountNum, Z0);

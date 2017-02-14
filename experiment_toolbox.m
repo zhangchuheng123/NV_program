@@ -171,6 +171,7 @@ function scan_mirror(X, Y, Z, CountNum, Z0)
     tic;
     
     for ind3 = 1:numel(Z)
+        piezo.MOV_1D(3, Z(ind3)), pause(scan_pause_time_long);
         for ind2 = 1:numel(Y)
 
             if (mod(ind2, 2) == 1)
