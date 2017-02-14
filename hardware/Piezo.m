@@ -4,6 +4,7 @@ function peizo = Peizo
 	peizo.MOV = @MOV;
 	peizo.MVR = @MVR;
 	peizo.MVR_1D = @MVR_1D;
+	peizo.MOV_1D = @MOV_1D;
 end
 
 function init
@@ -60,5 +61,11 @@ end
 function MVR_1D(direction, stepsize)
     global Devices;
     s = ['MVR ', num2str(direction) ,' ', num2str(stepsize)];
+    fprintf(Devices.Piezo, '%s\n', s);
+end
+
+function MOV_1D(direction, stepsize)
+    global Devices;
+    s = ['MOV ', num2str(direction) ,' ', num2str(stepsize)];
     fprintf(Devices.Piezo, '%s\n', s);
 end

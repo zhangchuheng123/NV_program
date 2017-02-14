@@ -77,7 +77,7 @@ function large_scan(X, Y, XX, YY, Z, CountNum, Z0)
             current_APT_pos = target_APT_pos;
             apt.MVR(relative_APT_pos(1), relative_APT_pos(2));
             for ind3 = 1:numel(Z)
-                piezo.MVR(0, 0, Z(ind3)), pause(scan_pause_time_long);
+                piezo.MOV_1D(3, Z(ind3)), pause(scan_pause_time_long);
                 for ind2 = 1:numel(Y)
 
                     if (mod(ind2, 2) == 1)
@@ -171,7 +171,6 @@ function scan_mirror(X, Y, Z, CountNum, Z0)
     tic;
     
     for ind3 = 1:numel(Z)
-        piezo.MOV(0, 0, Z(ind3)), pause(scan_pause_time_long);
         for ind2 = 1:numel(Y)
 
             if (mod(ind2, 2) == 1)
