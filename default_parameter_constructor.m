@@ -31,8 +31,9 @@ function parameters = default_parameter_constructor(stage_name, debug_mode)
 		parameters.APT.is_coord_when_init = false;
 		parameters.APT.coord_init.x = 3.4002;
 		parameters.APT.coord_init.y = 7.4967;
-	end
+    end
 		
+    parameters.Detector.click_pause_time = 0.01;
 
 	% waiting time between each sample point
 	% how to calculate pause time : piezo velocity 1000um/s, fixed time for movement: 50~100ms
@@ -41,7 +42,10 @@ function parameters = default_parameter_constructor(stage_name, debug_mode)
 	parameters.scan.scan_pause_time_long = 0.2;
     
     parameters.mirror_scan.scan_pause_time_long = 0.2;
-    parameters.mirror_scan.scan_pause_time = 0.01;
+    parameters.mirror_scan.scan_pause_time = 0;
+    
+    parameters.mirror_scan_fast.scan_pause_time_long = 0.2;
+    parameters.mirror_scan_fast.scan_pause_time = 0;
 
     parameters.large_scan.scan_pause_time_long = 0.2;
     parameters.large_scan.scan_pause_time = 0;

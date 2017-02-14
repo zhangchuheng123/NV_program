@@ -35,7 +35,8 @@ function re = is_init
 end
 
 function click(round_num, time_ms)
-    global Devices;
+    global Devices parameters;
+    pause_time = parameters.Detector.click_pause_time;
     if (nargin == 0)
         round_num = 1;
         time_ms = 10;
@@ -47,8 +48,10 @@ function click(round_num, time_ms)
     elseif (time_ms == 100)
         bit_num = 4;
     end
-    count = 0;
     for num = 1:round_num
+        t_click = tic;
+        while (toc(t_click) < pause_time)
+        end
         fprintf(Devices.Detector,'%d', [bit_num, 0]);
     end
 end

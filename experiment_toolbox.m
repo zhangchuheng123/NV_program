@@ -21,6 +21,7 @@ function large_scan(X, Y, XX, YY, Z, CountNum, Z0)
     %
     % Date:     
     %   Establish:          Feb. 12, 2017
+    %   Modify:             Feb. 14, 2017       turn mirror scan into fast mirror scan
 
     global parameters;
 
@@ -64,6 +65,7 @@ function large_scan(X, Y, XX, YY, Z, CountNum, Z0)
     end
 
     scan_pause_time_long = parameters.large_scan.scan_pause_time_long;
+    scan_pause_time = parameters.large_scan.scan_pause_time;
 
     hwait=waitbar(0, 'Please wait...', 'Name', 'Large Scanning...');
     c = onCleanup(@()close(hwait));
@@ -89,19 +91,24 @@ function large_scan(X, Y, XX, YY, Z, CountNum, Z0)
 
                     for ind1 = ind1_list
                         mirror.output(X(ind1), Y(ind2));
-
-                        % read data
-                        ancilla = detector.read(CountNum);
-                        data(ind1, ind2, ind3) = ancilla;
-
+                        if (scan_pause_time ~= 0)
+                            pause(scan_pause_time);
+                        end
+                        detector.click(CountNum);
                         % update processing bar
                         count = count + 1;
                         ratio = count ./ total_count;
                         t = toc;
                         remaining_time = fix(t ./ ratio .* (1 - ratio));
-                        str = sprintf('count at (%.1f, %.1f) = %.1f Now processing %.1f %% \n Time remaining %d s', ...
-                            X(ind1), Y(ind2), ancilla, fix(ratio .* 1000)/10, remaining_time);
+                        str = sprintf('at (%.1f, %.1f) Now processing %.1f %% \n Time remaining %d s', ...
+                            X(ind1), Y(ind2), fix(ratio .* 1000)/10, remaining_time);
                         waitbar(ratio, hwait, str);
+                    end
+
+                    if (mod(ind2, 2) == 1)
+                        data(:, ind2, ind3) = detector.read_serial(numel(ind1_list), CountNum);
+                    else
+                        data(:, ind2, ind3) = fliplr(detector.read_serial(numel(ind1_list), CountNum));
                     end
                 end
             end
@@ -149,8 +156,8 @@ function scan_mirror_fast(X, Y, Z, CountNum, Z0)
         mirror.init()
     end
 
-    scan_pause_time_long = parameters.mirror_scan.scan_pause_time_long;
-    scan_pause_time = parameters.mirror_scan.scan_pause_time;
+    scan_pause_time_long = parameters.mirror_scan_fast.scan_pause_time_long;
+    scan_pause_time = parameters.mirror_scan_fast.scan_pause_time;
 
     mirror.output(X(1), Y(1)), pause(0.2);
     detector.flush();
@@ -185,9 +192,7 @@ function scan_mirror_fast(X, Y, Z, CountNum, Z0)
             for ind1 = ind1_list
                 mirror.output(X(ind1), Y(ind2));
                 if (scan_pause_time ~= 0)
-                    t2 = tic;
-                    while (toc(t2) < scan_pause_time) 
-                    end
+                    pause(scan_pause_time);
                 end
                 detector.click(CountNum);
                 % update processing bar
@@ -200,7 +205,11 @@ function scan_mirror_fast(X, Y, Z, CountNum, Z0)
                 waitbar(ratio, hwait, str);
             end
 
-            data(:, ind2, ind3) = detector.read_serial(numel(ind1_list), CountNum);
+            if (mod(ind2, 2) == 1)
+                data(:, ind2, ind3) = detector.read_serial(numel(ind1_list), CountNum);
+            else
+                data(:, ind2, ind3) = fliplr(detector.read_serial(numel(ind1_list), CountNum));
+            end
         end
     end
 
