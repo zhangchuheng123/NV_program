@@ -13,9 +13,12 @@ function init
 		delete(instrfindall);
 	end
 	if (~isfield(Devices, 'Detector'))
+        Detector = serial('com15','Timeout',1);
 		Detector = serial(parameters.Detector.com_name);
 	    Detector.Terminator = 'CR';
 	    Detector.BaudRate = 2000000;
+        Detector.InputBufferSize = 70000;
+        Detector.OutputBufferSize = 70000;
 	    fopen(Detector);
 	    fprintf(Detector, '%d', 0);
 	    fprintf(Detector, '%d', 1);
