@@ -3,6 +3,7 @@ function tools = experiment_toolbox
     % Methods of toolbox
 	tools.scan = @scan;
     tools.scan_mirror = @scan_mirror;
+    tools.scan_mirror_fast = @scan_mirror_fast;
     tools.ESR = @ESR;
     tools.calibration = @calibration;
     tools.large_scan = @large_scan;
@@ -116,6 +117,100 @@ function large_scan(X, Y, XX, YY, Z, CountNum, Z0)
     apt.HOME();
 end
 
+function scan_mirror_fast(X, Y, Z, CountNum, Z0)
+    %   author:   Zhang Chuheng 
+    %   email:    zhangchuheng123 (AT) gmail.com
+    %   home:     zhangchuheng123.github.io
+    %   github:   zhangchuheng123
+    % Date:     
+    %   Establish:          Jan. 18, 2017
+    %   Modify:             Feb. 11, 2017
+    %   Major modify:       Feb. 14, 2017
+
+    global parameters;
+
+    if (nargin == 4)
+        Z0 = 0;
+    end
+
+    % Check for initialization
+    detector = Detector();
+    if detector.is_init() == false
+        detector.init();
+    end
+
+    piezo = Piezo();
+    if piezo.is_init() == false
+        piezo.init();
+    end
+
+    mirror = Mirror();
+    if mirror.is_init() == false
+        mirror.init()
+    end
+
+    scan_pause_time_long = parameters.mirror_scan.scan_pause_time_long;
+    scan_pause_time = parameters.mirror_scan.scan_pause_time;
+
+    mirror.output(X(1), Y(1)), pause(0.2);
+    detector.flush();
+    if (CountNum == 0)
+        return;
+    end
+
+    data = zeros(numel(X), numel(Y), numel(Z));
+    total_count = numel(X) * numel(Y) * numel(Z);
+    count = 0;
+    
+    if (total_count == 1)
+        fprintf('Move Mirror to position ... done');
+        return;
+    end
+
+    hwait=waitbar(0, 'Please wait...', 'Name', 'Mirror Scanning...');
+    c = onCleanup(@()close(hwait));
+
+    tic;
+    
+    for ind3 = 1:numel(Z)
+        piezo.MOV_1D(3, Z(ind3)), pause(scan_pause_time_long);
+        for ind2 = 1:numel(Y)
+
+            if (mod(ind2, 2) == 1)
+                ind1_list = 1:numel(X);
+            else
+                ind1_list = numel(X):-1:1;
+            end
+
+            for ind1 = ind1_list
+                mirror.output(X(ind1), Y(ind2));
+                if (scan_pause_time ~= 0)
+                    t2 = tic;
+                    while (toc(t2) < scan_pause_time) 
+                    end
+                end
+                detector.click(CountNum);
+                % update processing bar
+                count = count + 1;
+                ratio = count ./ total_count;
+                t = toc;
+                remaining_time = fix(t ./ ratio .* (1 - ratio));
+                str = sprintf('at (%.1f, %.1f) Now processing %.1f %% \n Time remaining %d s', ...
+                    X(ind1), Y(ind2), fix(ratio .* 1000)/10, remaining_time);
+                waitbar(ratio, hwait, str);
+            end
+
+            data(:, ind2, ind3) = detector.read_serial(numel(ind1_list), CountNum);
+        end
+    end
+
+    fig_hdl = scan_plot(X, Y, Z, data, Z0);
+
+    if (parameters.figure.is_save == 1)
+        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-MirrorScan');
+    end
+end
+
 function scan_mirror(X, Y, Z, CountNum, Z0)
     %   author:   Zhang Chuheng 
     %   email:    zhangchuheng123 (AT) gmail.com
@@ -183,9 +278,10 @@ function scan_mirror(X, Y, Z, CountNum, Z0)
             for ind1 = ind1_list
                 mirror.output(X(ind1), Y(ind2));
                 if (scan_pause_time ~= 0)
-                    pause(scan_pause_time);
+                    t2 = tic;
+                    while (toc(t2) < scan_pause_time) 
+                    end
                 end
-
                 % read data
                 ancilla = detector.read(CountNum);
                 data(ind1, ind2, ind3) = ancilla;
