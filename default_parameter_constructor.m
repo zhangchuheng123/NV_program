@@ -29,8 +29,8 @@ function parameters = default_parameter_constructor(stage_name, debug_mode)
 		parameters.APT.is_show = true;
 		parameters.APT.is_home_when_init = false;
 		parameters.APT.is_coord_when_init = false;
-		parameters.APT.coord_init.x = 3.4002;
-		parameters.APT.coord_init.y = 7.4967;
+		parameters.APT.coord_init.x = 2;
+		parameters.APT.coord_init.y = 2;
     end
 		
     parameters.Detector.click_pause_time = 0.01;
@@ -56,7 +56,7 @@ function parameters = default_parameter_constructor(stage_name, debug_mode)
 	parameters.figure.is_save = 1; 
 
 	% step size for calibration
-	parameters.calibration.step_size = 0.1;
+	parameters.calibration.step_size = 0.2;
 	% step size decay
 	parameters.calibration.half_decay_iter_number = inf;
 	% pause time of each MVR

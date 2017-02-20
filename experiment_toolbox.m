@@ -23,8 +23,12 @@ function large_scan(X, Y, XX, YY, Z, CountNum, Z0)
     %   Establish:          Feb. 12, 2017
     %   Modify:             Feb. 14, 2017       turn mirror scan into fast mirror scan
 
+    % load parameters
     global parameters;
+    scan_pause_time_long = parameters.large_scan.scan_pause_time_long;
+    scan_pause_time = parameters.large_scan.scan_pause_time;
 
+    % check argin
     if (nargin == 5)
         CountNum = 1;
         Z0 = 0;
@@ -54,22 +58,20 @@ function large_scan(X, Y, XX, YY, Z, CountNum, Z0)
         mirror.init()
     end
 
+    % prepare
     data = zeros(numel(X), numel(Y), numel(Z));
     total_count = numel(XX) * numel(YY) * numel(X) * numel(Y) * numel(Z);
     count = 0;
 
+    % when total_count=1, it just move mirror to posi
     if (total_count == 1)
         mirror.output(X, Y);
         fprintf('Move Mirror to position ... done\n');
         return;
     end
 
-    scan_pause_time_long = parameters.large_scan.scan_pause_time_long;
-    scan_pause_time = parameters.large_scan.scan_pause_time;
-
     hwait=waitbar(0, 'Please wait...', 'Name', 'Large Scanning...');
     c = onCleanup(@()close(hwait));
-
     tic;
     
     current_APT_pos = [0, 0];

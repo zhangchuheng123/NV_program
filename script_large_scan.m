@@ -9,35 +9,35 @@ tools.large_scan(0, 0, 0, 0, 0);
 %% scanz example
 X = 50;
 Y = 50;
-Z = 1:0.5:50;
-CountNum = 40;
+Z = 10:0.5:25;
+CountNum = 10;
 tools.scan(X, Y, Z, CountNum, 0);
 
 %% large scan
 % APT unit: mm
-Z0 = 17;
-X_vol = -100:2:100;
-Y_vol = -100:2:100;
-APT_X = -0.05:0.1:0.05;
-APT_Y = -0.05:0.1:0.05;
-Z_rel = [2, 10];
+Z0 = 16;
+X_vol = -200:2:200;
+Y_vol = -200:2:200;
+APT_X = -0.3:0.3:0.3;
+APT_Y = -0.3:0.3:0.3;
+Z_rel = [4, 6];
 Z = Z_rel + Z0;
 CountNum = 1;
 tools.scan(50, 50, Z0, 0);
 tools.large_scan(X_vol, Y_vol, APT_X, APT_Y, Z, CountNum, Z0);
 
 %% density scan
-Z0 = 17;
+Z0 = 24;
 X_vol = -100:2:100;
 Y_vol = -100:2:100;
-Z_rel = 10;
+Z_rel = 50;
 Z = Z0 + Z_rel;
 CountNum = 1;
 tools.scan(50, 50, Z0, 0);
 tools.scan_mirror_fast(X_vol, Y_vol, Z, CountNum, Z0);
 
 %% density scan
-Z0 = 16.5;
+Z0 = 47;
 X = 40:0.3:60;
 Y = 40:0.3:60;
 Z_rel = 30;
@@ -46,31 +46,28 @@ CountNum = 1;
 tools.scan(X, Y, Z, CountNum, Z0);
 
 %% center scan
-Z0 = 17;
-X0 = -106;
-Y0 = -51;
-delta = 10;
+X0 = 40;
+Y0 = 43.3;
+delta = 5;
 X_vol = X0-delta:1:X0+delta;
 Y_vol = Y0-delta:1:Y0+delta;
-Z_rel = 10;
-Z = Z_rel + Z0;
 CountNum = 10;
 tools.scan(50, 50, Z0, 0);
 tools.scan_mirror_fast(X_vol, Y_vol, Z, CountNum, Z0);
 
 %% center scan
-X0 = 54.2;
-Y0 = 46.9;
-Z0 = 16.5;
+X0 = 45.7;
+Y0 = 41.8;
 delta = 1;
 X = X0-delta:0.1:X0+delta;
 Y = Y0-delta:0.1:Y0+delta;
-Z_rel = 30;
-Z = Z0 + Z_rel;
-CountNum  = 10;
+CountNum  = 5;
 tools.scan(X, Y, Z, CountNum, Z0);
 
 %%
-Z = Z_rel+Z0-10:0.2:Z_rel+Z0+10;
+X0 = 45.7;
+Y0 = 41.6;
+Z = 77;
+Z = Z-10:0.2:Z+10;
 CountNum = 10;
 tools.scan(X0, Y0, Z, CountNum, Z0);
