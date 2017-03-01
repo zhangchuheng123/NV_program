@@ -5,12 +5,12 @@ function mir = Mirror
 end
 
 function init
-	global Devices;
+	global Devices parameters;
 	if (isempty(Devices))
 		delete(instrfindall);
 	end
 	if (~isfield(Devices, 'MIR'))
-        MIR = serial('com10');
+        MIR = serial(parameters.Mirror.com_name);
         % MIR.Terminator = 'CR';
         MIR.BaudRate = 2000000;
         MIR.StopBits = 2;

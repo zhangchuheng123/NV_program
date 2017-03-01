@@ -24,6 +24,7 @@ function parameters = default_parameter_constructor(stage_name, debug_mode)
 		parameters.AWG.ip_port = 4005;
 		parameters.MW.ip_name = '192.168.13.5';
 		parameters.MW.ip_port = 5025;
+        parameters.Mirror.com_name = 'com10';
 		parameters.APT.SNx = 83836232; 	
 		parameters.APT.SNy = 83850683;	
 		parameters.APT.is_show = true;
@@ -40,15 +41,20 @@ function parameters = default_parameter_constructor(stage_name, debug_mode)
 	parameters.scan.scan_pause_time = 0.06;
 	% waiting time between two lines 
 	parameters.scan.scan_pause_time_long = 0.2;
+
+	parameters.scan_fast.scan_pause_time = 0.06;
+	parameters.scan_fast.scan_pause_time_long = 0.2;
     
     parameters.mirror_scan.scan_pause_time_long = 0.2;
     parameters.mirror_scan.scan_pause_time = 0;
     
     parameters.mirror_scan_fast.scan_pause_time_long = 0.2;
-    parameters.mirror_scan_fast.scan_pause_time = 0;
+    parameters.mirror_scan_fast.scan_pause_time = 0.02;
 
     parameters.large_scan.scan_pause_time_long = 0.2;
-    parameters.large_scan.scan_pause_time = 0;
+    parameters.large_scan.scan_pause_time = parameters.mirror_scan_fast.scan_pause_time;
+    
+    parameters.scan_surface.scan_pause_time_long = 0.2;
 
 	% file name prefix
 	parameters.figure.identifier = 'default_identifier_';

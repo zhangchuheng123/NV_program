@@ -7,6 +7,8 @@ function tools = experiment_toolbox
     tools.ESR = @ESR;
     tools.calibration = @calibration;
     tools.large_scan = @large_scan;
+    tools.scan_fast = @scan_fast;
+    tools.scan_surface = @scan_surface;
 end
 
 function large_scan(X, Y, XX, YY, Z, CountNum, Z0)
@@ -315,6 +317,168 @@ function scan_mirror(X, Y, Z, CountNum, Z0)
         auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-MirrorScan');
     end
 end
+
+function scan_fast(X, Y, Z, CountNum, Z0)
+    %   author:   Zhang Chuheng 
+    %   email:    zhangchuheng123 (AT) gmail.com
+    %   home:     zhangchuheng123.github.io
+    %   github:   zhangchuheng123
+    % Date:     
+    %   Establish:          Feb. 21, 2017
+
+    global parameters;
+
+    detector = Detector();
+    piezo = Piezo();
+
+    % Check for initialization
+    if detector.is_init() == false
+        detector.init();       
+    end
+    if piezo.is_init() == false
+        piezo.init();       
+    end
+
+    scan_pause_time = parameters.scan_fast.scan_pause_time;
+    scan_pause_time_long = parameters.scan_fast.scan_pause_time_long;
+
+    piezo.MOV(X(1), Y(1), Z(1)), pause(1);
+    detector.flush();
+
+    data = zeros(numel(X), numel(Y), numel(Z));
+    total_count = numel(X) * numel(Y) * numel(Z);
+    count = 0;
+    
+    if (total_count == 1)
+        piezo.MOV(X(1), Y(1), Z(1));
+        fprintf('Move piezo to position ... done\n');
+        return;
+    end
+
+    hwait=waitbar(0, 'Please wait...', 'Name', 'Scanning...');
+    c = onCleanup(@()close(hwait));
+    
+    tic;
+    
+    for ind3 = 1:numel(Z)
+        for ind2 = 1:numel(Y)
+
+            piezo.MOV(X(1), Y(ind2), Z(ind3));
+            pause(scan_pause_time_long);
+
+            for ind1 = 1:numel(X)
+                % move piezo to new position
+                if (ind1 ~= 1)
+                    step_x = X(2) - X(1);
+                    piezo.MVR(step_x, 0, 0);
+                end 
+                if (scan_pause_time ~= 0)
+                    pause(scan_pause_time);
+                end
+                % read data
+                detector.click(CountNum);
+
+                % update processing bar
+                count = count + 1;
+                ratio = count ./ total_count;
+                t = toc;
+                remaining_time = fix(t ./ ratio .* (1 - ratio));
+                str = sprintf('@(%.1f, %.1f, %.1f) Now processing %.1f %% \n Time remaining %d s', ...
+                    X(ind1), Y(ind2),  Z(ind3), fix(ratio .* 1000)/10, remaining_time);
+                waitbar(ratio, hwait, str);
+            end
+            data(:, ind2, ind3) = detector.read_serial(numel(X), CountNum);
+        end
+    end
+
+    fig_hdl = scan_plot(X, Y, Z, data, Z0);
+
+    if (parameters.figure.is_save == 1)
+        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-Scan');
+    end
+end 
+
+function scan_surface(X, Y, Z, CountNum)
+    %   author:   Zhang Chuheng 
+    %   email:    zhangchuheng123 (AT) gmail.com
+    %   home:     zhangchuheng123.github.io
+    %   github:   zhangchuheng123
+    % Date:     
+    %   Establish:          Mar. 1, 2017
+
+    global parameters;
+
+    detector = Detector();
+    piezo = Piezo();
+
+    % Check for initialization
+    if detector.is_init() == false
+        detector.init();       
+    end
+    if piezo.is_init() == false
+        piezo.init();       
+    end
+    
+    scan_pause_time_long = parameters.scan_surface.scan_pause_time_long;
+
+    piezo.MOV(X(1), Y(1), Z(1)), pause(1);
+    detector.flush();
+
+    data = zeros(numel(X), numel(Y), numel(Z));
+    total_count = numel(X) * numel(Y) * numel(Z);
+    count = 0;
+    
+    if (total_count == 1)
+        piezo.MOV(X(1), Y(1), Z(1));
+        fprintf('Move piezo to position ... done\n');
+        return;
+    end
+
+    hwait=waitbar(0, 'Please wait...', 'Name', 'Scanning...');
+    c = onCleanup(@()close(hwait));
+    
+    tic;
+    
+    step_z = Z(2) - Z(1);
+    
+    for ind1 = 1:numel(X)
+        for ind2 = 1:numel(Y)
+            piezo.MOV(X(1), Y(ind2), Z(1));
+            pause(scan_pause_time_long);
+            for ind3 = 1:numel(Z)
+                piezo.MVR(0, 0, step_z);
+                % read data
+                detector.click(CountNum);
+                % update processing bar
+                count = count + 1;
+                ratio = count ./ total_count;
+                t = toc;
+                remaining_time = fix(t ./ ratio .* (1 - ratio));
+                str = sprintf('@(%.1f, %.1f, %.1f) Now processing %.1f %% \n Time remaining %d s', ...
+                    X(ind1), Y(ind2),  Z(ind3), fix(ratio .* 1000)/10, remaining_time);
+                waitbar(ratio, hwait, str);
+            end
+            data_tmp = detector.read_serial(numel(Z), CountNum);
+            data(ind1, ind2, :) = data_tmp';
+        end
+    end
+    data = squeeze(mean(mean(data, 1), 2));
+    
+    % Plot
+    fig_hdl = figure;
+    plot(Z, data);
+    ylim([0, max(data)]);
+%     hold on;
+%     data_diff = data(2:end) - data(1:end-1);
+%     data_diff = data_diff ./ max(data_diff) .* max(data);
+%     z_tick = Z(2:end) + step_z / 2;
+%     plot(z_tick, data_diff);
+%     legend('scan avg (kcounts/s)', 'derivative (normalized');
+
+    if (parameters.figure.is_save == 1)
+        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-Scan-Surface');
+    end
+end 
 
 function scan(X, Y, Z, CountNum, Z0)
 	% 	author:   Zhang Chuheng 
