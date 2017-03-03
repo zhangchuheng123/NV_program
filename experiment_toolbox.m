@@ -1,23 +1,22 @@
 function tools = experiment_toolbox
     addpath('hardware');
     % Methods of toolbox
-	tools.scan = @scan;
+    tools.scan_large = @scan_large;
+	tools.scan_piezo = @scan_piezo;
     tools.scan_mirror = @scan_mirror;
-    tools.scan_mirror_fast = @scan_mirror_fast;
+    tools.scan_surface = @scan_surface;
+
     tools.ESR = @ESR;
     tools.calibration = @calibration;
-    tools.large_scan = @large_scan;
-    tools.scan_fast = @scan_fast;
-    tools.scan_surface = @scan_surface;
 end
 
-function large_scan(X, Y, XX, YY, Z, CountNum, Z0)
+function scan_large(X, Y, XX, YY, Z, CountNum, Z0)
     %   author:   Zhang Chuheng 
     %   email:    zhangchuheng123 (AT) gmail.com
     %   home:     zhangchuheng123.github.io
     %   github:   zhangchuheng123
     %
-    %   scan using APT motor and mirror
+    %   scan using APT motor and mirror to scan
     %   X, Y        mirror voltage
     %   XX, YY      APT scale
     %
@@ -128,7 +127,7 @@ function large_scan(X, Y, XX, YY, Z, CountNum, Z0)
     apt.HOME();
 end
 
-function scan_mirror_fast(X, Y, Z, CountNum, Z0)
+function scan_mirror(X, Y, Z, CountNum, Z0)
     %   author:   Zhang Chuheng 
     %   email:    zhangchuheng123 (AT) gmail.com
     %   home:     zhangchuheng123.github.io
@@ -224,107 +223,26 @@ function scan_mirror_fast(X, Y, Z, CountNum, Z0)
     end
 end
 
-function scan_mirror(X, Y, Z, CountNum, Z0)
+function scan_piezo(X, Y, Z, CountNum, Z0)
     %   author:   Zhang Chuheng 
     %   email:    zhangchuheng123 (AT) gmail.com
     %   home:     zhangchuheng123.github.io
     %   github:   zhangchuheng123
     % Date:     
-    %   Establish:          Jan. 18, 2017
-    %   Modify:             Feb. 11, 2017
-
-    global parameters;
-
-    if (nargin == 4)
-        Z0 = 0;
-    end
-
-    % Check for initialization
-    detector = Detector();
-    if detector.is_init() == false
-        detector.init();
-    end
-
-    piezo = Piezo();
-    if piezo.is_init() == false
-        piezo.init();
-    end
-
-    mirror = Mirror();
-    if mirror.is_init() == false
-        mirror.init()
-    end
-
-    scan_pause_time_long = parameters.mirror_scan.scan_pause_time_long;
-    scan_pause_time = parameters.mirror_scan.scan_pause_time;
-
-    mirror.output(X(1), Y(1)), pause(0.2);
-    detector.read();
-    if (CountNum == 0)
-        return;
-    end
-
-    data = zeros(numel(X), numel(Y), numel(Z));
-    total_count = numel(X) * numel(Y) * numel(Z);
-    count = 0;
-    
-    if (total_count == 1)
-        fprintf('Move Mirror to position ... done');
-        return;
-    end
-
-    hwait=waitbar(0, 'Please wait...', 'Name', 'Mirror Scanning...');
-    c = onCleanup(@()close(hwait));
-
-    tic;
-    
-    for ind3 = 1:numel(Z)
-        piezo.MOV_1D(3, Z(ind3)), pause(scan_pause_time_long);
-        for ind2 = 1:numel(Y)
-
-            if (mod(ind2, 2) == 1)
-                ind1_list = 1:numel(X);
-            else
-                ind1_list = numel(X):-1:1;
-            end
-
-            for ind1 = ind1_list
-                mirror.output(X(ind1), Y(ind2));
-                if (scan_pause_time ~= 0)
-                    t2 = tic;
-                    while (toc(t2) < scan_pause_time) 
-                    end
-                end
-                % read data
-                ancilla = detector.read(CountNum);
-                data(ind1, ind2, ind3) = ancilla;
-
-                % update processing bar
-                count = count + 1;
-                ratio = count ./ total_count;
-                t = toc;
-                remaining_time = fix(t ./ ratio .* (1 - ratio));
-                str = sprintf('count at (%.1f, %.1f) = %.1f Now processing %.1f %% \n Time remaining %d s', ...
-                    X(ind1), Y(ind2), ancilla, fix(ratio .* 1000)/10, remaining_time);
-                waitbar(ratio, hwait, str);
-            end
-        end
-    end
-
-    fig_hdl = scan_plot(X, Y, Z, data, Z0);
-
-    if (parameters.figure.is_save == 1)
-        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-MirrorScan');
-    end
-end
-
-function scan_fast(X, Y, Z, CountNum, Z0)
-    %   author:   Zhang Chuheng 
-    %   email:    zhangchuheng123 (AT) gmail.com
-    %   home:     zhangchuheng123.github.io
-    %   github:   zhangchuheng123
-    % Date:     
-    %   Establish:          Feb. 21, 2017
+    %   Establish:          Sep. 15, 2016
+	%   Modify:             Oct. 23, 2016       modify ip address of detector in lab1
+	%   Modify:             Oct. 24, 2016       correct the file name mistake / 
+	%											caption relative depth rather than z cooridinate
+	%   Modify:             Oct. 26, 2016       show z as well as depth
+	%   Modify:             Oct. 26, 2016       optimize figure(jpg) output
+	%   Modify:             Oct. 29, 2016       add cleanup script
+	%   Modify:             Nov. 09, 2016       introduce long scan pause time
+	%   Modify:             Nov. 10, 2016       save to different folder 
+	%   Establish v2.0      Nov. 17, 2016       use it as a function
+	% 	Establish v3.0		Dec. 03, 2016 		as a function of the toolbox
+    %   Modify:             Feb. 11, 2017       use hardware package
+    %   Establish:          Feb. 21, 2017		scan_fast
+    % 	Merge and rename: 	Mar. 03, 2017		merge scan and scan_fast and rename to scan_piezo
 
     global parameters;
 
