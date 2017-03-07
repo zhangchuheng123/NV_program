@@ -38,21 +38,15 @@ function parameters = default_parameter_constructor(stage_name, debug_mode)
 
 	% waiting time between each sample point
 	% how to calculate pause time : piezo velocity 1000um/s, fixed time for movement: 50~100ms
-	parameters.scan.scan_pause_time = 0.06;
+	parameters.scan_piezo.scan_pause_time = 0.06;
 	% waiting time between two lines 
-	parameters.scan.scan_pause_time_long = 0.2;
-
-	parameters.scan_fast.scan_pause_time = 0.06;
-	parameters.scan_fast.scan_pause_time_long = 0.2;
+	parameters.scan_piezo.scan_pause_time_long = 0.2;
     
-    parameters.mirror_scan.scan_pause_time_long = 0.2;
-    parameters.mirror_scan.scan_pause_time = 0;
-    
-    parameters.mirror_scan_fast.scan_pause_time_long = 0.2;
-    parameters.mirror_scan_fast.scan_pause_time = 0.02;
+    parameters.scan_mirror.scan_pause_time_long = 0.2;
+    parameters.scan_mirror.scan_pause_time = 0.02;
 
-    parameters.large_scan.scan_pause_time_long = 0.2;
-    parameters.large_scan.scan_pause_time = parameters.mirror_scan_fast.scan_pause_time;
+    parameters.scan_large.scan_pause_time_long = 0.2;
+    parameters.scan_large.scan_pause_time = parameters.scan_mirror.scan_pause_time;
     
     parameters.scan_surface.scan_pause_time_long = 0.2;
 

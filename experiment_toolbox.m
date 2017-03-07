@@ -26,8 +26,8 @@ function scan_large(X, Y, XX, YY, Z, CountNum, Z0)
 
     % load parameters
     global parameters;
-    scan_pause_time_long = parameters.large_scan.scan_pause_time_long;
-    scan_pause_time = parameters.large_scan.scan_pause_time;
+    scan_pause_time_long = parameters.scan_large.scan_pause_time_long;
+    scan_pause_time = parameters.scan_large.scan_pause_time;
 
     % check argin
     if (nargin == 5)
@@ -119,7 +119,7 @@ function scan_large(X, Y, XX, YY, Z, CountNum, Z0)
             str = ['(', num2str(XX(indx)), ',', num2str(YY(indy)), ')_'];
             set(fig_hdl, 'Name', str);
             if (parameters.figure.is_save == 1)
-                auto_save(fig_hdl, X, Y, Z, data, [parameters.figure.identifier, str], '-LargeScan');
+                auto_save(fig_hdl, X, Y, Z, data, [parameters.figure.identifier, str], '-ScanLarge');
             end
         end
     end
@@ -159,8 +159,8 @@ function scan_mirror(X, Y, Z, CountNum, Z0)
         mirror.init()
     end
 
-    scan_pause_time_long = parameters.mirror_scan_fast.scan_pause_time_long;
-    scan_pause_time = parameters.mirror_scan_fast.scan_pause_time;
+    scan_pause_time_long = parameters.scan_mirror.scan_pause_time_long;
+    scan_pause_time = parameters.scan_mirror.scan_pause_time;
 
     mirror.output(X(1), Y(1)), pause(0.2);
     detector.flush();
@@ -219,7 +219,7 @@ function scan_mirror(X, Y, Z, CountNum, Z0)
     fig_hdl = scan_plot(X, Y, Z, data, Z0);
 
     if (parameters.figure.is_save == 1)
-        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-MirrorScan');
+        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-scan_mirror');
     end
 end
 
@@ -257,8 +257,8 @@ function scan_piezo(X, Y, Z, CountNum, Z0)
         piezo.init();       
     end
 
-    scan_pause_time = parameters.scan_fast.scan_pause_time;
-    scan_pause_time_long = parameters.scan_fast.scan_pause_time_long;
+    scan_pause_time = parameters.scan_piezo.scan_pause_time;
+    scan_pause_time_long = parameters.scan_piezo.scan_pause_time_long;
 
     piezo.MOV(X(1), Y(1), Z(1)), pause(1);
     detector.flush();
@@ -312,7 +312,7 @@ function scan_piezo(X, Y, Z, CountNum, Z0)
     fig_hdl = scan_plot(X, Y, Z, data, Z0);
 
     if (parameters.figure.is_save == 1)
-        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-Scan');
+        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-ScanPiezo');
     end
 end 
 
@@ -386,107 +386,9 @@ function scan_surface(X, Y, Z, CountNum)
     fig_hdl = figure;
     plot(Z, data);
     ylim([0, max(data)]);
-%     hold on;
-%     data_diff = data(2:end) - data(1:end-1);
-%     data_diff = data_diff ./ max(data_diff) .* max(data);
-%     z_tick = Z(2:end) + step_z / 2;
-%     plot(z_tick, data_diff);
-%     legend('scan avg (kcounts/s)', 'derivative (normalized');
 
     if (parameters.figure.is_save == 1)
-        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-Scan-Surface');
-    end
-end 
-
-function scan(X, Y, Z, CountNum, Z0)
-	% 	author:   Zhang Chuheng 
-	%   email:    zhangchuheng123 (AT) gmail.com
-	%   home:     zhangchuheng123.github.io
-	%   github:   zhangchuheng123
-	% Date:     
-	%   Establish:          Sep. 15, 2016
-	%   Modify:             Oct. 23, 2016       modify ip address of detector in lab1
-	%   Modify:             Oct. 24, 2016       correct the file name mistake / 
-	%											caption relative depth rather than z cooridinate
-	%   Modify:             Oct. 26, 2016       show z as well as depth
-	%   Modify:             Oct. 26, 2016       optimize figure(jpg) output
-	%   Modify:             Oct. 29, 2016       add cleanup script
-	%   Modify:             Nov. 09, 2016       introduce long scan pause time
-	%   Modify:             Nov. 10, 2016       save to different folder 
-	%   Establish v2.0      Nov. 17, 2016       use it as a function
-	% 	Establish v3.0		Dec. 03, 2016 		as a function of the toolbox
-    %   Modify:             Feb. 11, 2017       use hardware package
-	% Description:
-	%   This is a all-in-one package for scanning fluorescent shining in diamond.
-	%   Initialization of hardware devices - piezo and detector - is included.
-
-    global parameters;
-
-    detector = Detector();
-    piezo = Piezo();
-
-    % Check for initialization
-	if detector.is_init() == false
-        detector.init();       
-    end
-    if piezo.is_init() == false
-        piezo.init();       
-    end
-
-    scan_pause_time = parameters.scan.scan_pause_time;
-    scan_pause_time_long = parameters.scan.scan_pause_time_long;
-
-    piezo.MOV(X(1), Y(1), Z(1)), pause(1);
-    detector.read();
-
-    data = zeros(numel(X), numel(Y), numel(Z));
-    total_count = numel(X) * numel(Y) * numel(Z);
-    count = 0;
-    
-    if (total_count == 1)
-    	piezo.MOV(X(1), Y(1), Z(1));
-        fprintf('Move piezo to position ... done\n');
-        return;
-    end
-
-    hwait=waitbar(0, 'Please wait...', 'Name', 'Scanning...');
-    c = onCleanup(@()close(hwait));
-    
-    tic;
-    
-    for ind3 = 1:numel(Z)
-        for ind2 = 1:numel(Y)
-
-        	piezo.MOV(X(1), Y(ind2), Z(ind3));
-            pause(scan_pause_time_long);
-
-            for ind1 = 1:numel(X)
-                % move piezo to new position
-                if (ind1 ~= 1)
-                    step_x = X(2) - X(1);
-                    piezo.MVR(step_x, 0, 0);
-                    pause(scan_pause_time);
-                end 
-                % read data
-                ancilla = detector.read(CountNum);
-                data(ind1, ind2, ind3) = ancilla;
-
-                % update processing bar
-                count = count + 1;
-                ratio = count ./ total_count;
-                t = toc;
-                remaining_time = fix(t ./ ratio .* (1 - ratio));
-                str = sprintf('count at (%.1f, %.1f, %.1f) = %.1f Now processing %.1f %% \n Time remaining %d s', ...
-                    X(ind1), Y(ind2),  Z(ind3), ancilla, fix(ratio .* 1000)/10, remaining_time);
-                waitbar(ratio, hwait, str);
-            end
-        end
-    end
-
-    fig_hdl = scan_plot(X, Y, Z, data, Z0);
-
-    if (parameters.figure.is_save == 1)
-        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-Scan');
+        auto_save(fig_hdl, X, Y, Z, data, parameters.figure.identifier, '-ScanSurface');
     end
 end 
 
