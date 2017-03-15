@@ -7,18 +7,22 @@ tools.scan_piezo(50, 50, 20, 1, 0);
 tools.scan_large(0, 0, 0, 0, 0);
 
 %% scanz example
-X = 10:40:90;
-Y = 10:40:90;
+%X = 10:40:90;
+
+%Y = 10:40:90;
+X = 10;
+Y = 10;
 Z = 1:0.5:90;
 CountNum = 20;
-tools.scan_mirror(0, 0, 0, CountNum);
-tools.scan_surface(X, Y, Z, CountNum);
+%tools.scan_mirror(0, 0, 0, CountNum);
+tools.scan_piezo(50, 50, Z, CountNum);
+% tools.scan_piezo(X, Y, Z, CountNum);
 
 %% large scan
 % APT unit: mm
-Z0 = 20;
-X_vol = -200:2:200;
-Y_vol = -200:2:200;
+Z0 = 22.5;
+X_vol = -200:4:200;
+Y_vol = -200:4:200;
 APT_X = -0.3:0.3:0.3;
 APT_Y = -0.3:0.3:0.3;
 Z_rel = 6;
@@ -28,10 +32,10 @@ tools.scan_piezo(50, 50, Z0, 0);
 tools.scan_large(X_vol, Y_vol, APT_X, APT_Y, Z, CountNum, Z0);
 
 %% density scan mirror
-Z0 = 35.5;
-X_vol = -200:2:200;
-Y_vol = -200:2:200;
-Z_rel = 0:5:25;
+Z0 = 22.5;
+X_vol = -200:4:200;
+Y_vol = -200:4:200;
+Z_rel = 0;
 % Z_rel = 0;
 Z = Z0 + Z_rel;
 CountNum = 1;

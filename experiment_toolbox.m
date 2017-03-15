@@ -256,6 +256,10 @@ function scan_piezo(X, Y, Z, CountNum, Z0)
     if piezo.is_init() == false
         piezo.init();       
     end
+    
+    if nargin == 4
+        Z0 = 0;
+    end
 
     scan_pause_time = parameters.scan_piezo.scan_pause_time;
     scan_pause_time_long = parameters.scan_piezo.scan_pause_time_long;
